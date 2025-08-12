@@ -112,31 +112,27 @@ These are grouped into " Versions" for us to keep track, features will be releas
 
 V1 
 
-CV Module - Computer vision module to let you search for and detect anomalies in video. 
-- Ardupilot Support 
-- Betaflight Support  
-- Open AI Support
-- Llama support
+-CV Module - Computer vision module to let you search for and detect anomalies in video. 
+-Ardupilot Support 
+-Betaflight Support  
+-Open AI Support
+-Llama support
 
 
 
 V1.5 
 
-- Easy Model Integration
-- MCP modifications:
-- Improve token size 
-- Pagination
-- Frequency 
-- MCP Troubleshooting toolkit 
+-Easy Model Integration
+-Topic Frequency status 
+-MCP Troubleshooting toolkit 
 
 
 V2
-
-- Foxglove Integration
-- Rerun Integration 
-- CLI Support 
-- PyPi support 
-- VScode Support
+-Foxglove Integration
+-Rerun Integration 
+-CLI Support 
+-PyPi support 
+-VSCode Support
 
 
 
