@@ -103,3 +103,33 @@ Build and start the Bagel MCP server in a container with this command.
 ```sh
 docker compose run --build --service-ports ros2-kilted uv run main.py up mcp
 ```
+
+#### Roadmap
+
+If there's something you have feedback on, or something you'd like to see let us know!
+
+These are grouped into " Versions" for us to keep track, features will be released regularly. We'll update this readme to indicate which features have shipped. 
+
+
+
+V1  
+
+- CV Module - Computer vision module to let you search for and detect anomalies in video. 
+- Ardupilot Support 
+- Betaflight Support  
+- Open AI Support  
+- Llama Support  
+
+V1.5 
+
+- Easy Model Integration  
+- Topic Frequency Status 
+- MCP Troubleshooting Toolkit 
+
+V2  
+
+- Foxglove Integration  
+- Rerun Integration 
+- CLI Support 
+- PyPi Support 
+- VSCode Support  
