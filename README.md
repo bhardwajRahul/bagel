@@ -124,7 +124,7 @@ V1.5
 
 - Easy Model Integration  
 - Topic Frequency Status 
-- MCP Troubleshooting toolkit 
+- MCP Troubleshooting Toolkit 
 
 V2  
 
