@@ -110,7 +110,7 @@ If there's something you have feedback on, or something you'd like to see let us
 
 These are grouped into " Versions" for us to keep track, features will be released regularly. We'll update this readme to indicate which features have shipped. 
 
-V1 
+
 
 V1  
 
