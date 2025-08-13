@@ -44,7 +44,7 @@ def read_metadata(robolog_path: str) -> dict[str, Any]:
         dict[str, Any]: A dictionary containing metadata extracted from the robolog.
 
     """
-    reader = factory.make_topic_frequency_reader(robolog_path)
+    reader = factory.make_topic_message_reader(robolog_path)
     return {
         "robolog_id": reader.robolog_id,
         "path": str(reader.path),
