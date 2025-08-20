@@ -100,11 +100,14 @@ Your local robolog files will be accessible inside the container at `/home/ubunt
 
 #### Launch the MCP Server
 
-Build and start the Bagel MCP server in a container with this command.
+Build and start the Bagel MCP server in a container with these commands:
 
 ```sh
-docker compose run --build --service-ports ros2-kilted uv run main.py up mcp
+docker compose build ros2-kilted
+docker compose run --service-ports ros2-kilted uv run main.py up mcp
 ```
+
+Once you run this, if you don't want to rebuild the container, you can just run the second command. 
 
 ## Roadmap
 
