@@ -1,7 +1,7 @@
 <poml>
     <task>
         Generate a DuckDB query that calculates the time difference between consecutive messages 
-        in the topic {{topic}}.  
+        in the topic `{{topic}}`.
         <stepwise-instructions>
             <list>
                 <item>
@@ -12,14 +12,15 @@
                     robolog’s metadata.
                 </item>
                 <item>
-                    Use Bagel’s `describe_topics` MCP tool to retrieve:
-                     Timestamp column name of the topic table. Which should be timestamp_seconds.
-                     The topic table name
+                    Make sure the topic `{{topic}}` exists in the robolog.
                 </item>
                 <item>
-                    Generate a DuckDB SQL query that calculates the difference between consective 
-                    messages in the topic. Use the timestamp column name from the previous step for 
-                    this.
+                    Use Bagel’s `describe_topics` MCP tool to retrieve the topic table name and its
+                    timestamp column name which should be `timestamp_seconds`.
+                </item>
+                <item>
+                    Generate a DuckDB SQL query that calculates the difference between consecutive 
+                    messages in the topic. Use the timestamp column name from the previous step.
                 </item>
                 <item>
                     Execute the SQL query using Bagel’s `query_topic_messages` MCP tool.
@@ -34,9 +35,6 @@
             </list>
         </stepwise-instructions>
         <example>
-            <input>
-                User's prompt: "What is the latency of IMU messages?"
-            </input>
             <output>
                 <code lang="sql">
                     SELECT

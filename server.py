@@ -155,7 +155,7 @@ def query_topic_messages(
 
 
 @server.tool(title="Answer user's text prompt about the robolog.")
-def answer_prompt(robolog_path: str, prompt: str) -> str:
+def answer_prompt(robolog_path: str, prompt: str) -> list[dict[str, Any]]:
     """Answer user's text prompt about the robolog.
 
     Args:
@@ -163,24 +163,25 @@ def answer_prompt(robolog_path: str, prompt: str) -> str:
         prompt (str): The user's text prompt.
 
     Returns:
-        str: The answer to the user's prompt.
+        list[dict[str, Any]]: The formatted prompt to send to the LLMs.
 
     """
     return poml(
         "./src/agent/query/messages.poml",
         context={"robolog_path": robolog_path, "prompt": prompt},
     )
-    
-@server.tool(title="Answer user's text prompt about latency of the topic")
-def calculate_latency(robolog_path: str, topic: str) -> str:
-    """Answer user's text prompt about latency of the topic
+
+
+@server.tool(title="Calculate the latency of a topic in the robolog.")
+def calculate_latency(robolog_path: str, topic: str) -> list[dict[str, Any]]:
+    """Calculate the latency of a topic in the robolog.
 
     Args:
         robolog_path (str): Path to the robolog.
         topic (str): The topic the user is interested in.
 
     Returns:
-        str: The answer to the user's prompt.
+        list[dict[str, Any]]: The formatted prompt to send to the LLMs.
 
     """
     return poml(
