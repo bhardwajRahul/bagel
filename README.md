@@ -16,9 +16,9 @@
 
 ---
 
-Bagel lets you chat with your robotics data.
+Bagel lets you **chat with your robotics and drone data**, just as you use ChatGPT.
 
-For example, you can ask Bagel to check a PX4 drone's IMU data for hard landings:
+For example, you can ask Bagel to check a drone's IMU data for hard landings:
 
 <p align="center">
   <picture>
@@ -26,11 +26,14 @@ For example, you can ask Bagel to check a PX4 drone's IMU data for hard landings
   </picture>
 </p>
 
-Bagel can also propose fixes for detected errors in your robot:
+**Don't trust LLM math?** Here is our solution.
+
+Whenever Bagel needs to do math on a robotics log, it generates a **deterministic** and
+**transparent** DuckDB SQL query to run against the data.
 
 <p align="center">
   <picture>
-    <img src="./doc/assets/prompt_find_errors.gif" width="90%">
+    <img src="./doc/assets/architecture_overview.png" width="80%">
   </picture>
 </p>
 
@@ -43,7 +46,8 @@ Bagel works with a wide range of common robotics and sensor log formats out of t
 | ✅ **PX4** (`.ulg`)            |
 | ✅ **ArduPilot** (`.bin`)      |
 
-Don't forget to join our [Discord server](https://discord.gg/QJDwuDGJsH)! (We messed up our Discord invite before. This link should add you as a member automatically.)
+Don't forget to join our [Discord server](https://discord.gg/QJDwuDGJsH)! We'll be there to answer
+your questions about Bagel and will sometimes drop merch!
 
 ## Quickstart
 
@@ -107,7 +111,7 @@ docker compose build ros2-kilted
 docker compose run --service-ports ros2-kilted uv run main.py up mcp
 ```
 
-Once you run this, if you don't want to rebuild the container, you can just run the second command. 
+Once you run this, if you don't want to rebuild the container, you can just run the second command.
 
 ## Roadmap
 
