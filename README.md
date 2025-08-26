@@ -35,7 +35,7 @@ You can also ask Bagel to calculate the maximum velocity:
 </p>
 
 LLMs are great at predicting words, not at doing math, because they lack an innate mechanism for
-precise calculation[1](https://medium.com/@adnanmasood/why-large-language-models-struggle-with-mathematical-reasoning-3dc8e9f964ae).
+precise calculation [1](https://medium.com/@adnanmasood/why-large-language-models-struggle-with-mathematical-reasoning-3dc8e9f964ae).
 Bagel solves this by generating a **deterministic** and **auditable** DuckDB SQL query to run
 against the data.
 
