@@ -9,6 +9,10 @@ on:
       - synchronize
       - reopened
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   tests:
     name: Run Unit Tests with (Python ${{ matrix.python-version }})
