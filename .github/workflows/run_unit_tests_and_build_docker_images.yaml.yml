@@ -91,7 +91,7 @@ jobs:
 
       - name: Build and Push ${{ matrix.name }}
         run: |
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
+          IMAGE_ID=ghcr.io/${{ github.repository }}/${{ matrix.name }}
           # Convert to lowercase for Docker compatibility
           IMAGE_ID=$(echo $IMAGE_ID | tr '[:upper:]' '[:lower:]')
           TAG=sha-${{ github.sha }}
