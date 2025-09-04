@@ -1,13 +1,13 @@
 name: Run Unit Tests and Build Docker Images on Feature Branch
 
-on:
-  pull_request:
-    branches:
-      - stage
-    types:
-      - opened
-      - synchronize
-      - reopened
+# on:
+#   pull_request:
+#     branches:
+#       - stage
+#     types:
+#       - opened
+#       - synchronize
+#       - reopened
 
 jobs:
   run-unit-tests:
