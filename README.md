@@ -9,6 +9,9 @@
   <a href="https://github.com/shouhengyi/bagel/blob/stage/LICENSE">
     <img alt="Apache" src="https://img.shields.io/badge/license-Apache-blue.svg">
   </a>
+  <a href="https://github.com/Extelligence-ai/bagel/actions/workflows/publish.yaml">
+    <img alt="Health" src="https://img.shields.io/github/actions/workflow/status/Extelligence-ai/bagel/publish.yaml?branch=stage&label=publish">
+  </a>
   <a href="https://discord.gg/QJDwuDGJsH">
     <img alt="Rerun Discord" src="https://img.shields.io/discord/1392632504908906506?label=Discord">
   </a>
