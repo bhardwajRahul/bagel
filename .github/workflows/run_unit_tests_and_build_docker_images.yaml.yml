@@ -10,7 +10,7 @@ on:
       - reopened
 
 jobs:
-  unit-tests:
+  run-unit-tests:
     name: Run Unit Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
@@ -27,11 +27,11 @@ jobs:
       - run: uv sync --all-extras
       - run: uv run -m pytest -q
 
-  push-docker-images:
-    name: Build and Push Docker Images
+  publish-docker-images:
+    name: Publish Docker Images (${{ matrix.name }})
     permissions:
       packages: write
-    needs: unit-tests
+    needs: run-unit-tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -74,9 +74,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and Push ${{ matrix.name }}
         run: |
-          IMAGE_ID=ghcr.io/${{ github.repository }}/${{ matrix.name }}
-          # Convert to lowercase for Docker compatibility
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[:upper:]' '[:lower:]')
+          IMAGE_ID=ghcr.io/extelligence-ai/bagel/${{ matrix.name }}
           TAG=sha-${{ github.sha }}
 
           # Build the image
