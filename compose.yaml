@@ -1,6 +1,6 @@
 services:
   ros2-kilted:
-    image: ghcr.io/Extelligence-ai/ros2-kilted:latest
+    image: ghcr.io/extelligence-ai/bagel/ros2-kilted:latest
     ports:
       - "${BAGEL_WEBAPP_LOCAL_PORT:-8501}:${BAGEL_WEBAPP_LOCAL_PORT:-8501}"
       - "${BAGEL_MCP_LOCAL_PORT:-8000}:${BAGEL_MCP_LOCAL_PORT:-8000}"
@@ -8,7 +8,7 @@ services:
     #   - <path-to-local-data>:/home/ubuntu/data
 
   ros2-jazzy:
-    image: ghcr.io/Extelligence-ai/ros2-jazzy:latest
+    image: ghcr.io/extelligence-ai/bagel/ros2-jazzy:latest
     ports:
       - "${BAGEL_WEBAPP_LOCAL_PORT:-8501}:${BAGEL_WEBAPP_LOCAL_PORT:-8501}"
       - "${BAGEL_MCP_LOCAL_PORT:-8000}:${BAGEL_MCP_LOCAL_PORT:-8000}"
@@ -16,7 +16,7 @@ services:
     #   - <path-to-local-data>:/home/ubuntu/data
 
   ros2-iron:
-    image: ghcr.io/Extelligence-ai/ros2-iron:latest
+    image: ghcr.io/extelligence-ai/bagel/ros2-iron:latest
     ports:
       - "${BAGEL_WEBAPP_LOCAL_PORT:-8501}:${BAGEL_WEBAPP_LOCAL_PORT:-8501}"
       - "${BAGEL_MCP_LOCAL_PORT:-8000}:${BAGEL_MCP_LOCAL_PORT:-8000}"
@@ -24,7 +24,7 @@ services:
     #   - <path-to-local-data>:/home/ubuntu/data
 
   ros2-humble:
-    image: ghcr.io/Extelligence-ai/ros2-humble:latest
+    image: ghcr.io/extelligence-ai/bagel/ros2-humble:latest
     ports:
       - "${BAGEL_WEBAPP_LOCAL_PORT:-8501}:${BAGEL_WEBAPP_LOCAL_PORT:-8501}"
       - "${BAGEL_MCP_LOCAL_PORT:-8000}:${BAGEL_MCP_LOCAL_PORT:-8000}"
@@ -32,7 +32,7 @@ services:
     #   - <path-to-local-data>:/home/ubuntu/data
 
   ros1-noetic:
-    image: ghcr.io/Extelligence-ai/ros1-noetic:latest
+    image: ghcr.io/extelligence-ai/bagel/ros1-noetic:latest
     ports:
       - "${BAGEL_WEBAPP_LOCAL_PORT:-8501}:${BAGEL_WEBAPP_LOCAL_PORT:-8501}"
       - "${BAGEL_MCP_LOCAL_PORT:-8000}:${BAGEL_MCP_LOCAL_PORT:-8000}"
@@ -40,7 +40,7 @@ services:
     #   - <path-to-local-data>:/home/ubuntu/data
 
   px4:
-    image: ghcr.io/Extelligence-ai/px4:latest
+    image: ghcr.io/extelligence-ai/bagel/px4:latest
 
     ports:
       - "${BAGEL_WEBAPP_LOCAL_PORT:-8501}:${BAGEL_WEBAPP_LOCAL_PORT:-8501}"
@@ -49,7 +49,7 @@ services:
     #   - <path-to-local-data>:/home/ubuntu/data
 
   ardupilot:
-    image: ghcr.io/Extelligence-ai/ardupilot:latest
+    image: ghcr.io/extelligence-ai/bagel/ardupilot:latest
     ports:
       - "${BAGEL_WEBAPP_LOCAL_PORT:-8501}:${BAGEL_WEBAPP_LOCAL_PORT:-8501}"
       - "${BAGEL_MCP_LOCAL_PORT:-8000}:${BAGEL_MCP_LOCAL_PORT:-8000}"
@@ -57,7 +57,7 @@ services:
     #   - <path-to-local-data>:/home/ubuntu/data
 
   betaflight:
-    image: ghcr.io/Extelligence-ai/betaflight:latest
+    image: ghcr.io/extelligence-ai/bagel/betaflight:latest
     ports:
       - "${BAGEL_WEBAPP_LOCAL_PORT:-8501}:${BAGEL_WEBAPP_LOCAL_PORT:-8501}"
       - "${BAGEL_MCP_LOCAL_PORT:-8000}:${BAGEL_MCP_LOCAL_PORT:-8000}"
