@@ -1,16 +1,18 @@
 name: Run Unit Tests
 
 on:
-  workflow_run:
-    workflows: ["Lint Code"]
+  pull_request:
+    branches:
+      - stage
     types:
-      - completed
+      - opened
+      - synchronize
+      - reopened
 
 jobs:
   pytest:
     name: Python
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
