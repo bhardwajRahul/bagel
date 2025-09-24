@@ -199,5 +199,23 @@ def calculate_latency(robolog_path: str, topic: str) -> list[dict[str, Any]]:
     )
 
 
+@server.tool(title="Parse topic structure and show message schema with samples.")
+def parse_message_structure(robolog_path: str, topic: str | None = None) -> list[dict[str, Any]]:
+    """Parse a topic in a robotics log and emit a human-readable message schema with samples.
+
+    Args:
+        robolog_path (str): Path to the robolog.
+        topic (str | None): The topic to analyze. If None, will show available topics.
+
+    Returns:
+        list[dict[str, Any]]: The formatted prompt to send to the LLMs.
+
+    """
+    return poml(
+        "./src/agent/diagnostics/message_structure.poml",
+        context={"robolog_path": robolog_path, "topic": topic},
+    )
+
+
 if __name__ == "__main__":
     server.run(transport="sse")
