@@ -27,7 +27,8 @@
   </picture>
 </p>
 
-Bagel lets you chat with your physical data — just like you do with ChatGPT. For example:
+Unlike cat videos, most data are trapped in the physical world. Bagel unlocks them and
+**lets you chat with your physical data**—just like you do with ChatGPT. For example:
 
 > Is my IMU sensor overheating?
 
@@ -56,7 +57,7 @@ You can ask Bagel almost anything. For example:
 
 > What’s the correlation between current and voltage in the `/spot/status/battery_states` topic?
 
-> I think the robot hit a pothole. Can you check for sudden acceleration on the z-axis to confirm?
+> I think the robot hit a pothole. Can you check for sudden deceleration on the z-axis to confirm?
 
 > Can you help me tune the PID of my drone?
 
