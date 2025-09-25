@@ -72,13 +72,18 @@ Time to put Bagel to the test: can it catch a drone doing barrel rolls? Spoiler:
 ## 💡 How Bagel Works
 
 When you ask a question, Bagel analyzes your data source’s **metadata** and **topics** to
-build a high-level understanding. Based on your prompt, it identifies the most relevant topics
-and **interprets their meaning and structure**.
+build a high-level understanding.
 
-Bagel then processes this data in a local cache. It writes the relevant topic messages to an
-**Apache Arrow file** and uses **DuckDB** to generate and execute queries against it.
-This process is repeated as needed, running new queries until Bagel finds the best possible
-answer to your question.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./doc/assets/high_level_dark_mode.png">
+    <img src="./doc/assets/high_level_light_mode.png" width="80%">
+  </picture>
+</p>
+
+Based on your prompt, if further inspection is needed, Bagel identifies the most relevant topics
+and **interprets their meaning and structure**. Bagel then writes the relevant topic messages
+to an **Apache Arrow file** and uses **DuckDB** to generate and execute queries against it.
 
 <p align="center">
   <picture>
@@ -86,6 +91,9 @@ answer to your question.
     <img src="./doc/assets/llm_math_light_mode.png" width="80%">
   </picture>
 </p>
+
+This process is repeated as needed, running new queries until Bagel finds the best answer
+to your question.
 
 LLMs excel at language but struggle with math. Bagel overcomes this by generating **deterministic**
 DuckDB SQL queries. These queries are displayed for you to **audit**, and you can guide Bagel to
