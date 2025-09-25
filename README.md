@@ -154,7 +154,7 @@ and we’ll create a runbook for it.
 
 Now you're ready to launch your LLM and begin prompting. For example:
 
-> Summarize the metadata of the ROS2 bag "/home/ubuntu/runtime/data/sample/ros2/mcap".
+> Summarize the metadata of the ROS2 bag "./data/sample/ros2/mcap".
 
 ## 🐶 Teach Bagel a New Trick
 
@@ -183,7 +183,7 @@ For example, let’s define `./src/agent/examples/woof.poml`.
 
 Prompt Bagel:
 
-> Run the POML capability "./src/agent/examples/woof.poml" on the ROS2 bag "/home/ubuntu/runtime/data/sample/ros2/mcap".
+> Run the POML capability "./src/agent/examples/woof.poml" on the ROS2 bag "./data/sample/ros2/mcap".
 
 Result:
 
