@@ -62,3 +62,7 @@ Configured MCP servers:
 
 For more details on connecting MCP servers to Gemini CLI, see the
 [Gemini CLI docs](https://github.com/google-gemini/gemini-cli/blob/main/docs/tools/mcp-server.md).
+
+## 🎉 Congrats! You are all set.
+
+Still having trouble? 🤦 It’s not your fault. [File a ticket](https://github.com/Extelligence-ai/bagel/issues) and let us know.

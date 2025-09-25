@@ -60,3 +60,7 @@ Open the **Extensions** panel, and Bagel should appear under **MCP SERVERS – I
 
 For more details on connecting MCP servers to Copilot, see the
 [Copilot MCP doc](https://code.visualstudio.com/docs/copilot/customization/mcp-servers).
+
+## 🎉 Congrats! You are all set.
+
+Still having trouble? 🤦 It’s not your fault. [File a ticket](https://github.com/Extelligence-ai/bagel/issues) and let us know.

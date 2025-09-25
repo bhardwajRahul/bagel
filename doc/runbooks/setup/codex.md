@@ -100,3 +100,7 @@ You should see output like:
 
 For more details on connecting MCP servers to Codex, see the
 [Codex on GitHub](https://github.com/openai/codex/blob/main/docs/config.md#mcp_servers).
+
+## 🎉 Congrats! You are all set.
+
+Still having trouble? 🤦 It’s not your fault. [File a ticket](https://github.com/Extelligence-ai/bagel/issues) and let us know.

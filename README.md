@@ -29,7 +29,9 @@
 
 Bagel lets you chat with your physical data — just like you do with ChatGPT. For example:
 
-> What’s the highest temperature in my log?
+> Is my IMU sensor overheating?
+
+Can’t wait to try it out? 👉 Check out the [Quickstart](#️-quickstart).
 
 ### 🥯 Key Features
 
@@ -54,7 +56,7 @@ You can ask Bagel almost anything. For example:
 
 > What’s the correlation between current and voltage in the `/spot/status/battery_states` topic?
 
-> I think the IMU overheated at the end. Can you check the `HEAT` topic to confirm?
+> I think the robot hit a pothole. Can you check for sudden acceleration on the z-axis to confirm?
 
 > Can you help me tune the PID of my drone?
 

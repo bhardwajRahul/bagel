@@ -80,3 +80,7 @@ export MAX_MCP_OUTPUT_TOKENS=250000
 
 For more details on setting token size, see the
 [Claude Code docs](https://docs.claude.com/en/docs/claude-code/mcp#mcp-output-limits-and-warnings).
+
+## 🎉 Congrats! You are all set.
+
+Still having trouble? 🤦 It’s not your fault. [File a ticket](https://github.com/Extelligence-ai/bagel/issues) and let us know.

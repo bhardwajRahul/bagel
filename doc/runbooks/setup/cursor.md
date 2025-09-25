@@ -45,7 +45,12 @@ Next, add the Bagel configuration to the `"mcpServers"` object in `~/.cursor/mcp
 }
 ```
 
-Return to the UI and ensure that bagel is toggled on and the status indicator is green.
+**Save it** and return to the **Cursor Settings**. Ensure that bagel is toggled on and the status
+indicator is green.
 
 For more details on connecting MCP servers to Cursor, see the
 [Cursor MCP doc](https://cursor.com/docs/context/mcp).
+
+## 🎉 Congrats! You are all set.
+
+Still having trouble? 🤦 It’s not your fault. [File a ticket](https://github.com/Extelligence-ai/bagel/issues) and let us know.
