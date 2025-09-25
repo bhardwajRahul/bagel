@@ -2,11 +2,11 @@ rosbag2_bagfile_information:
   version: 4
   storage_identifier: sqlite3
   relative_file_paths:
-    - wbag_0.db3
-    - wbag_1.db3
-    - wbag_2.db3
-    - wbag_3.db3
-    - wbag_4.db3
+    - part_0.db3
+    - part_1.db3
+    - part_2.db3
+    - part_3.db3
+    - part_4.db3
   duration:
     nanoseconds: 411
   starting_time:

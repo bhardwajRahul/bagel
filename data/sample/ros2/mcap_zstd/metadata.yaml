@@ -54,9 +54,9 @@ rosbag2_bagfile_information:
   compression_format: zstd
   compression_mode: FILE
   relative_file_paths:
-    - rosbag2_2025_09_03-17_59_14_0.mcap.zstd
+    - part_0.mcap.zstd
   files:
-    - path: rosbag2_2025_09_03-17_59_14_0.mcap
+    - path: part_0.mcap
       starting_time:
         nanoseconds_since_epoch: 1756947554895767282
       duration:

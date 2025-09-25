@@ -54,9 +54,9 @@ rosbag2_bagfile_information:
   compression_format: zstd
   compression_mode: FILE
   relative_file_paths:
-    - rosbag2_2025_09_03-22_09_55_0.db3.zstd
+    - part_0.db3.zstd
   files:
-    - path: rosbag2_2025_09_03-22_09_55_0.db3
+    - path: part_0.db3
       starting_time:
         nanoseconds_since_epoch: 1756962595726561534
       duration:

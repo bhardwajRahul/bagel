@@ -38,9 +38,9 @@ rosbag2_bagfile_information:
   compression_format: ""
   compression_mode: ""
   relative_file_paths:
-    - fluid_message_0.mcap
+    - part_0.mcap
   files:
-    - path: fluid_message_0.mcap
+    - path: part_0.mcap
       starting_time:
         nanoseconds_since_epoch: 1689969664041739015
       duration:
