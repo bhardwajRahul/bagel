@@ -134,10 +134,10 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 
 Once the Bagel MCP server is running, connect it to your preferred LLM.
 Bagel should work with any MCP-enabled LLM, though some setup may be required.
-We’ve tested several LLMs—see the runbooks below for setup instructions.
+We’ve tested several LLMs—expand the runbooks below for setup instructions.
 
 <details>
-  <summary>📚 Runbooks for tested LLMs</summary>
+  <summary>📚 Setup runbooks for tested LLMs</summary>
 
 - [Claude Code](./doc/runbooks/setup/claude_code.md)
 - [Gemini CLI](./doc/runbooks/setup/gemini_cli.md)
