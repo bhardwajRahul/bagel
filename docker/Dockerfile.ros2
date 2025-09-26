@@ -14,7 +14,6 @@ RUN apt-get update && \
     "ros-${ROS_DISTRO}-ros-base" \
     "ros-${ROS_DISTRO}-ros2bag" \
     "ros-${ROS_DISTRO}-rosbag2-transport" \
-    "ros-${ROS_DISTRO}-rosbag2-storage-sqlite3" \
     "ros-${ROS_DISTRO}-rosbag2-storage-mcap" && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
