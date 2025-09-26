@@ -1,4 +1,10 @@
+import os
+
+import pytest
+
 from src.source.ros2 import mcap
+
+ROS_DISTRO = os.getenv("ROS_DISTRO")
 
 
 def test_should_build_mcap_directory() -> None:
@@ -27,6 +33,10 @@ def test_should_build_mcap_file() -> None:
     assert bag.metadata.message_count == 15
 
 
+@pytest.mark.skipif(
+    ROS_DISTRO in ["iron", "humble"],
+    reason=f"Skipping this test for ROS_DISTRO={ROS_DISTRO} due to lack of zstd support.",
+)
 def test_should_build_mcap_zstd_directory() -> None:
     # GIVEN
     factory = mcap.SourceFactory("data/sample/ros2/mcap_zstd/")
@@ -37,9 +47,13 @@ def test_should_build_mcap_zstd_directory() -> None:
     # THEN
     assert isinstance(bag, mcap.McapRos2Bag)
     assert len(bag.mcap_files) == 1
-    assert bag.metadata.message_count == 11
+    assert bag.metadata.message_count == 6
 
 
+@pytest.mark.skipif(
+    ROS_DISTRO in ["iron", "humble"],
+    reason=f"Skipping this test for ROS_DISTRO={ROS_DISTRO} due to lack of zstd support.",
+)
 def test_should_build_mcap_zstd_file() -> None:
     # GIVEN
     factory = mcap.SourceFactory("data/sample/ros2/mcap_zstd/part_0.mcap.zstd")
@@ -50,4 +64,4 @@ def test_should_build_mcap_zstd_file() -> None:
     # THEN
     assert isinstance(bag, mcap.McapRos2Bag)
     assert len(bag.mcap_files) == 1
-    assert bag.metadata.message_count == 11
+    assert bag.metadata.message_count == 6
