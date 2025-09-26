@@ -2,10 +2,10 @@ rosbag2_bagfile_information:
   version: 9
   storage_identifier: sqlite3
   duration:
-    nanoseconds: 722785
+    nanoseconds: 5822755310
   starting_time:
-    nanoseconds_since_epoch: 1758921866960577435
-  message_count: 6
+    nanoseconds_since_epoch: 1756962595726561534
+  message_count: 8
   topics_with_message_count:
     - topic_metadata:
         name: /events/write_split
@@ -50,7 +50,7 @@ rosbag2_bagfile_information:
               nsec: 854775807
             avoid_ros_namespace_conventions: false
         type_description_hash: RIHS01_e28ce254ca8abc06abf92773b74602cdbf116ed34fbaf294fb9f81da9f318eac
-      message_count: 6
+      message_count: 8
   compression_format: zstd
   compression_mode: FILE
   relative_file_paths:
@@ -58,9 +58,9 @@ rosbag2_bagfile_information:
   files:
     - path: part_0.db3
       starting_time:
-        nanoseconds_since_epoch: 1758921866960577435
+        nanoseconds_since_epoch: 1756962595726561534
       duration:
-        nanoseconds: 722785
-      message_count: 6
+        nanoseconds: 5822755310
+      message_count: 8
   custom_data: ~
   ros_distro: kilted

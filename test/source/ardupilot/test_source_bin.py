@@ -1,11 +1,11 @@
 import pytest
 
-from src.source.ardupilot.bin import SourceFactory
+from src.source.ardupilot import bin as ardubin
 
 
 def test_source_factory() -> None:
     # GIVEN
-    factory = SourceFactory("data/sample/ardupilot/sample.bin")
+    factory = ardubin.SourceFactory("data/sample/ardupilot/sample.bin")
 
     # WHEN / THEN
     assert factory.total_message_count == 69769
@@ -16,4 +16,4 @@ def test_source_factory() -> None:
 def test_validate_path_should_raise() -> None:
     # WHEN / THEN
     with pytest.raises(FileNotFoundError):
-        SourceFactory("data/sample/ardupilot/non_exist.bin")
+        ardubin.SourceFactory("data/sample/ardupilot/non_exist.bin")
