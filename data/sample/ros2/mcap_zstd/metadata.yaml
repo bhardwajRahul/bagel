@@ -2,10 +2,10 @@ rosbag2_bagfile_information:
   version: 9
   storage_identifier: mcap
   duration:
-    nanoseconds: 7463679668
+    nanoseconds: 600880
   starting_time:
-    nanoseconds_since_epoch: 1756947554895767282
-  message_count: 11
+    nanoseconds_since_epoch: 1758921828523021747
+  message_count: 6
   topics_with_message_count:
     - topic_metadata:
         name: /events/write_split
@@ -50,7 +50,7 @@ rosbag2_bagfile_information:
               nsec: 854775807
             avoid_ros_namespace_conventions: false
         type_description_hash: RIHS01_e28ce254ca8abc06abf92773b74602cdbf116ed34fbaf294fb9f81da9f318eac
-      message_count: 11
+      message_count: 6
   compression_format: zstd
   compression_mode: FILE
   relative_file_paths:
@@ -58,9 +58,9 @@ rosbag2_bagfile_information:
   files:
     - path: part_0.mcap
       starting_time:
-        nanoseconds_since_epoch: 1756947554895767282
+        nanoseconds_since_epoch: 1758921828523021747
       duration:
-        nanoseconds: 7463679668
-      message_count: 11
+        nanoseconds: 600880
+      message_count: 6
   custom_data: ~
   ros_distro: kilted
