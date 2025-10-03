@@ -34,6 +34,7 @@ class SourceFactory(base.BoundedSourceFactory, base.FileBasedSourceFactory):
         return {
             **self._bounded_metadata,
             **self._file_based_metadata,
+            **self._metadata,
         }
 
     @property

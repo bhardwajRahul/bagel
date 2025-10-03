@@ -53,9 +53,6 @@ class TopicSink(abc.ABC):
             port (str): Port number of the live data stream.
             overwrite (bool): If True, remove any existing sink directory.
 
-        Raises:
-            FileExistsError: If the sink directory already exists and overwrite is False.
-
         """
         weakref.finalize(self, self.close)  # ensure clean-up on deletion
         self._connect()
@@ -69,13 +66,13 @@ class TopicSink(abc.ABC):
         self._directory = artifacts.sink_directory(
             str(uuid.uuid5(uuid.NAMESPACE_OID, "_".join([self._host, str(self._port)])))
         )
-        if self._directory.exists():
-            if not overwrite:
-                raise FileExistsError(self._directory)
+        if self._directory.exists() and overwrite:
             shutil.rmtree(self._directory)
         self._directory.mkdir(parents=True, exist_ok=True)
-        with open(self._directory / "metadata.yaml", "w", encoding="utf-8") as f:
-            f.write(yaml.safe_dump(self.metadata))
+        metadata_file = self._directory / "metadata.yaml"
+        if not metadata_file.exists():
+            with open(metadata_file, "w", encoding="utf-8") as f:
+                f.write(yaml.safe_dump(self.metadata))
 
         # Initialize topic buffers
         self._buffers: dict[str, TopicBufferWriter] = {}  # topic -> buffer
