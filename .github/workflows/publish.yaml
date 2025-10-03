@@ -33,15 +33,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push ${{ matrix.service }}
         run: |
-          IMAGE_ID=ghcr.io/extelligence-ai/bagel/${{ matrix.service }}
-          SHA=sha-${{ github.sha }}
+          IMAGE=ghcr.io/extelligence-ai/bagel/${{ matrix.service }}
+          TAG=sha-${{ github.sha }}
 
           # Build the image
           docker compose build ${{ matrix.service }}
 
           # Tag the image
-          docker tag $IMAGE_ID:latest $IMAGE_ID:$SHA
+          docker tag $IMAGE:latest $IMAGE:$TAG
 
           # Push both tags
-          docker push $IMAGE_ID:latest
-          docker push $IMAGE_ID:$SHA
+          docker push $IMAGE:latest
+          docker push $IMAGE:$TAG
