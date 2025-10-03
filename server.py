@@ -11,13 +11,13 @@ from poml import poml
 from settings import settings
 from src.di import module
 from src.di.types.base_module import BaseModule
-from src.di.types.data_source import resolve as resolve_data_source_type
-from src.di.types.message_sink import resolve as resolve_message_sink_type
+from src.di.types.data_source import resolve
+from src.di.types.message_sink import TopicSink, guess_host, guess_port
 
 server = FastMCP(
     name="Bagel MCP Server",
-    host=settings.LOCAL_HOST,
-    port=settings.MCP_LOCAL_PORT,
+    host=settings.MCP_SERVER_HOST,
+    port=settings.MCP_SERVER_PORT,
 )
 
 
@@ -52,7 +52,7 @@ def describe_data_source(path: str, args: dict[str, Any] | None = None) -> list[
         list[dict[str, Any]]: The formatted prompt to send to the LLMs.
 
     """
-    ds_type = resolve_data_source_type(path)
+    ds_type = resolve(path)
     factory = module.provide(BaseModule.SOURCE_FACTORY, ds_type, {"path": path, **(args or {})})
     registry = module.provide(BaseModule.TOPIC_REGISTRY, ds_type, args or {})
     return poml(
@@ -96,7 +96,7 @@ def describe_topic(
         list[dict[str, Any]]: The formatted prompt to send to the LLMs.
 
     """
-    ds_type = resolve_data_source_type(path)
+    ds_type = resolve(path)
     factory = module.provide(BaseModule.SOURCE_FACTORY, ds_type, {"path": path, **(args or {})})
     registry = module.provide(BaseModule.TOPIC_REGISTRY, ds_type, args or {})
     dataset = module.provide(BaseModule.MESSAGE_DATASET, ds_type, {})
@@ -156,7 +156,7 @@ def query_messages(  # noqa: PLR0913
         list[dict[str, Any]]: The query results as a list of dictionaries.
 
     """
-    ds_type = resolve_data_source_type(path)
+    ds_type = resolve(path)
     factory = module.provide(BaseModule.SOURCE_FACTORY, ds_type, {"path": path, **(args or {})})
     registry = module.provide(BaseModule.TOPIC_REGISTRY, ds_type, args or {})
     dataset = module.provide(BaseModule.MESSAGE_DATASET, ds_type, {})
@@ -192,7 +192,7 @@ def read_loggings(
         list[dict[str, Any]]: The logging messages in the data source.
 
     """
-    ds_type = resolve_data_source_type(path)
+    ds_type = resolve(path)
     factory = module.provide(BaseModule.SOURCE_FACTORY, ds_type, {"path": path, **(args or {})})
     registry = module.provide(BaseModule.TOPIC_REGISTRY, ds_type, args or {})
     dataset = module.provide(BaseModule.LOGGING_DATASET, ds_type, {})
@@ -201,25 +201,68 @@ def read_loggings(
 
 
 @server.tool(
+    title="List topics in the live data stream that are available for subscription.",
+)
+def list_live_topics(
+    type_: str,
+    host: str | None = None,
+    port: int | None = None,
+    args: dict[str, Any] | None = None,
+) -> list[str]:
+    """List topics in the live data stream that are available for subscription.
+
+    Args:
+        type_ (str): The type of the TopicSink. For available options, see `TopicSink` in
+            `src/di/types/message_sink.py`.
+        host (str | None, optional): The hostname of the live data stream service. If None,
+            it will guess the default host.
+        port (int | None, optional): The port number of the live data stream service. If None,
+            it will guess the default port.
+        args (dict[str, Any] | None, optional): Additional constructor arguments used to create
+            the TopicSink.
+
+    Returns:
+        list[str]: A list of available topics for subscription.
+
+    """
+    ts_type = TopicSink(type_)
+    sink = module.provide(
+        BaseModule.MESSAGE_SINK,
+        ts_type,
+        {
+            "host": host or guess_host(ts_type),
+            "port": port or guess_port(ts_type),
+            "overwrite": False,
+            **(args or {}),
+        },
+    )
+    return sink.available_topics
+
+
+@server.tool(
     title="Subscribe to real-time topic messages from a live data stream.",
     description="Establish a connection to a live data stream and sink the topic messages locally.",
 )
-def subscribe_live_topics(
-    host: str,
-    port: int,
+def subscribe_live_topics(  # noqa: PLR0913
+    type_: str,
     topics: list[str] | None = None,
-    hint: str | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    overwrite: bool = False,
     args: dict[str, Any] | None = None,
 ) -> str:
     """Subscribe to real-time topic messages from a live data stream.
 
     Args:
-        host (str): The hostname of the live data stream.
-        port (int): The port number of the live data stream.
-        topics (list[str] | None, optional): List of topics to subscribe to. If None,
+        type_ (str): The type of the TopicSink. For available options, see `TopicSink` in
+            `src/di/types/message_sink.py`.
+        topics (list[str] | None, optional): A list of topics to subscribe to. If None,
             subscribes to all available topics.
-        hint (str | None, optional): Additional hint about the live data stream. It will be used
-            to identify which TopicSink to use, for example, "ROS2 with rosbridge."
+        host (str | None, optional): The hostname of the live data stream service. If None,
+            it will guess the default host.
+        port (int | None, optional): The port number of the live data stream service. If None,
+            it will guess the default port.
+        overwrite (bool, optional): If True, overwrite any existing sink directory.
         args (dict[str, Any] | None, optional): Additional constructor arguments used to create
             the TopicSink.
 
@@ -228,14 +271,14 @@ def subscribe_live_topics(
             initialize the SourceFactory for subsequent tools.
 
     """
-    ts_type = resolve_message_sink_type(hint or "")
+    ts_type = TopicSink(type_)
     sink = module.provide(
         BaseModule.MESSAGE_SINK,
         ts_type,
         {
-            "host": host,
-            "port": port,
-            "overwrite": args.get("overwrite", True) if args else True,
+            "host": host or guess_host(ts_type),
+            "port": port or guess_port(ts_type),
+            "overwrite": overwrite,
             **(args or {}),
         },
     )
