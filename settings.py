@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Bytes per record batch in arrow files. Not always respected
     ARROW_RECORD_BATCH_SIZE_BYTES: int = 1 * GB
 
+    # Bytes per topic buffer in a message sink. Always respected
+    JSONL_BUFFER_SIZE_PER_TOPIC_BYTES: int = 50 * MB
+
     # Column name for timestamps in arrow files, i.e., when messages were recorded
     TIMESTAMP_SECONDS_COLUMN_NAME: str = "timestamp_seconds"
 
