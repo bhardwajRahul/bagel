@@ -11,7 +11,8 @@ from poml import poml
 from settings import settings
 from src.di import module
 from src.di.types.base_module import BaseModule
-from src.di.types.data_source import resolve
+from src.di.types.data_source import resolve as resolve_data_source_type
+from src.di.types.message_sink import resolve as resolve_message_sink_type
 
 server = FastMCP(
     name="Bagel MCP Server",
@@ -51,7 +52,7 @@ def describe_data_source(path: str, args: dict[str, Any] | None = None) -> list[
         list[dict[str, Any]]: The formatted prompt to send to the LLMs.
 
     """
-    ds_type = resolve(path)
+    ds_type = resolve_data_source_type(path)
     factory = module.provide(BaseModule.SOURCE_FACTORY, ds_type, {"path": path, **(args or {})})
     registry = module.provide(BaseModule.TOPIC_REGISTRY, ds_type, args or {})
     return poml(
@@ -95,7 +96,7 @@ def describe_topic(
         list[dict[str, Any]]: The formatted prompt to send to the LLMs.
 
     """
-    ds_type = resolve(path)
+    ds_type = resolve_data_source_type(path)
     factory = module.provide(BaseModule.SOURCE_FACTORY, ds_type, {"path": path, **(args or {})})
     registry = module.provide(BaseModule.TOPIC_REGISTRY, ds_type, args or {})
     dataset = module.provide(BaseModule.MESSAGE_DATASET, ds_type, {})
@@ -155,7 +156,7 @@ def query_messages(  # noqa: PLR0913
         list[dict[str, Any]]: The query results as a list of dictionaries.
 
     """
-    ds_type = resolve(path)
+    ds_type = resolve_data_source_type(path)
     factory = module.provide(BaseModule.SOURCE_FACTORY, ds_type, {"path": path, **(args or {})})
     registry = module.provide(BaseModule.TOPIC_REGISTRY, ds_type, args or {})
     dataset = module.provide(BaseModule.MESSAGE_DATASET, ds_type, {})
@@ -191,12 +192,55 @@ def read_loggings(
         list[dict[str, Any]]: The logging messages in the data source.
 
     """
-    ds_type = resolve(path)
+    ds_type = resolve_data_source_type(path)
     factory = module.provide(BaseModule.SOURCE_FACTORY, ds_type, {"path": path, **(args or {})})
     registry = module.provide(BaseModule.TOPIC_REGISTRY, ds_type, args or {})
     dataset = module.provide(BaseModule.LOGGING_DATASET, ds_type, {})
     relation = dataset.to_duckdb(factory, registry, start_seconds, end_seconds)
     return relation.to_df().to_dict(orient="records")
+
+
+@server.tool(
+    title="Subscribe to real-time topic messages from a live data stream.",
+    description="Establish a connection to a live data stream and sink the topic messages locally.",
+)
+def subscribe_live_topics(
+    host: str,
+    port: int,
+    topics: list[str] | None = None,
+    hint: str | None = None,
+    args: dict[str, Any] | None = None,
+) -> str:
+    """Subscribe to real-time topic messages from a live data stream.
+
+    Args:
+        host (str): The hostname of the live data stream.
+        port (int): The port number of the live data stream.
+        topics (list[str] | None, optional): List of topics to subscribe to. If None,
+            subscribes to all available topics.
+        hint (str | None, optional): Additional hint about the live data stream. It will be used
+            to identify which TopicSink to use, for example, "ROS2 with rosbridge."
+        args (dict[str, Any] | None, optional): Additional constructor arguments used to create
+            the TopicSink.
+
+    Returns:
+        str: The directory path of the topic sink. It will be used as the `path` argument to
+            initialize the SourceFactory for subsequent tools.
+
+    """
+    ts_type = resolve_message_sink_type(hint or "")
+    sink = module.provide(
+        BaseModule.MESSAGE_SINK,
+        ts_type,
+        {
+            "host": host,
+            "port": port,
+            "overwrite": args.get("overwrite", True) if args else True,
+            **(args or {}),
+        },
+    )
+    sink.start(topics)
+    return str(sink.directory)
 
 
 @server.tool(
