@@ -30,10 +30,10 @@ def _artifact_paths(path: pathlib.Path, topic: str) -> dict[str, pathlib.Path]:
         "metadata_file": path / "metadata" / f"{topic_uuid}.yaml",
         "definition_file": path / "definitions" / f"{topic_uuid}.txt",
         "struct_file": path / "structs" / f"{topic_uuid}.pkl",
+        "file_lock": path / "locks" / f"{topic_uuid}.lock",
         "data_directory": data_directory,
         "current_data_file": data_directory / "current.jsonl",
         "overflow_data_file": data_directory / "overflow.jsonl",
-        "file_lock": data_directory / "file.lock",
     }
 
 
@@ -55,6 +55,7 @@ class TopicBufferWriter:
         definition: str,
         struct: pa.StructType,
         buffer_size_bytes: int | None = settings.JSONL_BUFFER_SIZE_PER_TOPIC_BYTES,
+        overwrite: bool = False,
     ) -> None:
         """Initialize a TopicBufferWriter instance.
 
@@ -66,6 +67,7 @@ class TopicBufferWriter:
             struct (pa.StructType): The PyArrow StructType of the topic.
             buffer_size_bytes (int | None, optional): The maximum buffer size in bytes.
                 If None, the buffer size is unlimited till disk space is exhausted.
+            overwrite (bool, optional): If True, overwrite any existing topic buffers.
 
         """
         self._topic = topic
@@ -90,11 +92,23 @@ class TopicBufferWriter:
         self._current_data_file = paths["current_data_file"]
         self._overflow_data_file = paths["overflow_data_file"]
 
-        self._write_metadata(metadata)
-        self._write_definition(self._definition)
-        self._write_struct(self._struct)
-        self._data_directory.mkdir(parents=True, exist_ok=True)
         self._file_lock = filelock.FileLock(paths["file_lock"])
+
+        with self._file_lock:
+            if not self._metadata_file.exists() or overwrite:
+                self._write_metadata(metadata)
+
+            if not self._definition_file.exists() or overwrite:
+                self._write_definition(self._definition)
+
+            if not self._struct_file.exists() or overwrite:
+                self._write_struct(self._struct)
+
+            self._data_directory.mkdir(parents=True, exist_ok=True)
+
+            if overwrite:
+                self._current_data_file.unlink(missing_ok=True)
+                self._overflow_data_file.unlink(missing_ok=True)
 
     @property
     def topic(self) -> str:
@@ -172,6 +186,7 @@ class TopicBufferReader:
         self._message_definition = self._definition_file.read_text(encoding="utf-8")
         with open(self._struct_file, "rb") as f:
             self._struct = pickle.load(f)  # noqa: S301
+
         self._file_lock = filelock.FileLock(paths["file_lock"])
 
     @property

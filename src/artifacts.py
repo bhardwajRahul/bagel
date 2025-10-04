@@ -25,7 +25,7 @@ def arrow_file(source_uuid: str, seeds: list[str], prefix: str) -> pathlib.Path:
 
 
 def sink_directory(sink_uuid: str) -> pathlib.Path:
-    """Generate a directory path for storing data from a topic message sink."""
+    """Generate a directory path for storing data from a topic sink."""
     return pathlib.Path(settings.CACHE_DIRECTORY) / "data" / f"sink={sink_uuid}"
 
 

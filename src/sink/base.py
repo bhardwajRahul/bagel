@@ -2,7 +2,6 @@
 
 import abc
 import pathlib
-import shutil
 import uuid
 import weakref
 from typing import Any
@@ -39,21 +38,27 @@ class TopicSink(abc.ABC):
 
     """
 
+    _is_singleton_initialized: bool
+
     def __new__(cls, host: str, port: str, *args: object, **kwargs: object) -> "TopicSink":
         """Implement singleton pattern to ensure only one instance per (host, port)."""
         if (host, port) not in _global_sink_singletons:
-            _global_sink_singletons[(host, port)] = super().__new__(cls)
+            instance = super().__new__(cls)
+            instance._is_singleton_initialized = False
+            _global_sink_singletons[(host, port)] = instance
         return _global_sink_singletons[(host, port)]
 
-    def __init__(self, host: str, port: str, overwrite: bool) -> None:
+    def __init__(self, host: str, port: str) -> None:
         """Initialize the topic sink.
 
         Args:
             host (str): Hostname of the live data stream.
             port (str): Port number of the live data stream.
-            overwrite (bool): If True, remove any existing sink directory.
 
         """
+        if self._is_singleton_initialized:
+            return
+
         weakref.finalize(self, self.close)  # ensure clean-up on deletion
         self._connect()
 
@@ -66,8 +71,6 @@ class TopicSink(abc.ABC):
         self._directory = artifacts.sink_directory(
             str(uuid.uuid5(uuid.NAMESPACE_OID, "_".join([self._host, str(self._port)])))
         )
-        if self._directory.exists() and overwrite:
-            shutil.rmtree(self._directory)
         self._directory.mkdir(parents=True, exist_ok=True)
         metadata_file = self._directory / "metadata.yaml"
         if not metadata_file.exists():
@@ -76,6 +79,8 @@ class TopicSink(abc.ABC):
 
         # Initialize topic buffers
         self._buffers: dict[str, TopicBufferWriter] = {}  # topic -> buffer
+
+        self._is_singleton_initialized = True
 
     @abc.abstractmethod
     def _connect(self) -> None:
@@ -150,12 +155,13 @@ class TopicSink(abc.ABC):
             "magic": "BAGEL_SINK",  # Magic keyword to identify Bagel sink directories
         }
 
-    def start(self, topics: list[str] | None = None) -> None:
+    def subscribe(self, topics: list[str] | None = None, overwrite: bool = False) -> None:
         """Subscribe to a list of topics.
 
         Args:
             topics (list[str] | None, optional): List of topics to subscribe to. If None,
                 subscribes to all available topics.
+            overwrite (bool, optional): If True, overwrite any existing topic buffers.
 
         Raises:
             TopicNotFoundError: If any requested topic is unavailable.
@@ -173,6 +179,7 @@ class TopicSink(abc.ABC):
                     self._type_name(topic),
                     self._definition(topic),
                     self._struct(topic),
+                    overwrite=overwrite,
                 )
             self._subscribe(self._buffers[topic])
 

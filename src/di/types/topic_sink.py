@@ -1,4 +1,4 @@
-"""A list of supported message sink types and utilities to identify them."""
+"""A list of supported topic sink types and utilities to identify them."""
 
 from enum import Enum
 
@@ -6,7 +6,7 @@ from settings import settings
 
 
 class TopicSink(Enum):
-    """Supported message sink types."""
+    """Supported topic sink types."""
 
     ROS2_BRIDGE = "ros2.bridge"
 
