@@ -19,6 +19,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Source ROS for all users
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc
+
 # Set up runtime environment
 ARG USERNAME=ubuntu
 RUN id -u 1000 >/dev/null 2>&1 || useradd -m -u 1000 ${USERNAME}
