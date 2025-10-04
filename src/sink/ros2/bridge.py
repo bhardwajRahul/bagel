@@ -1,8 +1,8 @@
 """Provide a topic sink that connects to ROS2 through a rosbridge server."""
 
 import pyarrow as pa
-import rosapi.objectutils
 import roslibpy
+from roslibpy import ros
 
 from src.di import module
 from src.sink import base, buffer
@@ -40,10 +40,24 @@ class TopicSink(base.TopicSink):
 
         """
         self._client = roslibpy.Ros(host=host, port=port, is_secure=is_secure, headers=headers)
-        self._type_names: dict[str, str] = {}
-        self._definitions: dict[str, str] = {}
+
+        super().__init__(host, port, overwrite)  # establish connection
+
+        service = ros.Service(
+            self._client, "/rosapi/topics_and_raw_types", "rosapi_msgs/srv/TopicsAndRawTypes"
+        )
+        response = service.call({})
+        self._type_names = {
+            topic: type_name
+            for topic, type_name in zip(response["topics"], response["types"], strict=True)
+        }
+        self._definitions = {
+            topic: full_text
+            for topic, full_text in zip(
+                response["topics"], response["typedefs_full_text"], strict=True
+            )
+        }
         self._subscribers: dict[str, roslibpy.Topic] = {}
-        super().__init__(host, port, overwrite)
 
     def _connect(self) -> None:
         self._client.run()
@@ -55,18 +69,12 @@ class TopicSink(base.TopicSink):
         return self._client.get_topics()
 
     def _type_name(self, topic: str) -> str:
-        if topic not in self._type_names:
-            self._type_names[topic] = self._client.get_topic_type(topic)
         return self._type_names[topic]
 
     def _definition(self, topic: str) -> str:
-        if topic not in self._definitions:
-            self._definitions[topic] = rosapi.objectutils.get_typedef_full_text(
-                self._type_name(topic)
-            )
         return self._definitions[topic]
 
-    def _struct(self, topic: str) -> pa.Schema:
+    def _struct(self, topic: str) -> pa.StructType:
         main, deps = parse.parse(self._definition(topic))
         return schema.to_pa_struct(main, deps)
 
