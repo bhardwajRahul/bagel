@@ -12,7 +12,7 @@ from settings import settings
 from src.di import module
 from src.di.types.base_module import BaseModule
 from src.di.types.data_source import resolve
-from src.di.types.message_sink import TopicSink, guess_host, guess_port
+from src.di.types.topic_sink import TopicSink, guess_host, guess_port
 
 server = FastMCP(
     name="Bagel MCP Server",
@@ -213,7 +213,7 @@ def list_live_topics(
 
     Args:
         type_ (str): The type of the TopicSink. For available options, see `TopicSink` in
-            `src/di/types/message_sink.py`.
+            `src/di/types/topic_sink.py`.
         host (str | None, optional): The hostname of the live data stream service. If None,
             it will guess the default host.
         port (int | None, optional): The port number of the live data stream service. If None,
@@ -227,12 +227,11 @@ def list_live_topics(
     """
     ts_type = TopicSink(type_)
     sink = module.provide(
-        BaseModule.MESSAGE_SINK,
+        BaseModule.TOPIC_SINK,
         ts_type,
         {
             "host": host or guess_host(ts_type),
             "port": port or guess_port(ts_type),
-            "overwrite": False,
             **(args or {}),
         },
     )
@@ -255,7 +254,7 @@ def subscribe_live_topics(  # noqa: PLR0913
 
     Args:
         type_ (str): The type of the TopicSink. For available options, see `TopicSink` in
-            `src/di/types/message_sink.py`.
+            `src/di/types/topic_sink.py`.
         topics (list[str] | None, optional): A list of topics to subscribe to. If None,
             subscribes to all available topics.
         host (str | None, optional): The hostname of the live data stream service. If None,
@@ -273,16 +272,15 @@ def subscribe_live_topics(  # noqa: PLR0913
     """
     ts_type = TopicSink(type_)
     sink = module.provide(
-        BaseModule.MESSAGE_SINK,
+        BaseModule.TOPIC_SINK,
         ts_type,
         {
             "host": host or guess_host(ts_type),
             "port": port or guess_port(ts_type),
-            "overwrite": overwrite,
             **(args or {}),
         },
     )
-    sink.start(topics)
+    sink.subscribe(topics, overwrite=overwrite)
     return str(sink.directory)
 
 
