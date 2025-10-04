@@ -24,7 +24,6 @@ class TopicSink(base.TopicSink):
         self,
         host: str,
         port: int,
-        overwrite: bool,
         is_secure: bool = False,
         headers: dict[str, str] | None = None,
     ) -> None:
@@ -33,7 +32,6 @@ class TopicSink(base.TopicSink):
         Args:
             host (str): The hostname of the rosbridge server.
             port (int): The port number of the rosbridge server.
-            overwrite (bool): If True, overwrite any existing sink directory.
             is_secure (bool, optional): If True, use a secure WebSocket connection.
             headers (dict[str, str] | None, optional): Additional headers to include in
                 the WebSocket connection.
@@ -41,7 +39,7 @@ class TopicSink(base.TopicSink):
         """
         self._client = roslibpy.Ros(host=host, port=port, is_secure=is_secure, headers=headers)
 
-        super().__init__(host, port, overwrite)  # establish connection
+        super().__init__(host, port)  # establish connection
 
         service = ros.Service(
             self._client, "/rosapi/topics_and_raw_types", "rosapi_msgs/srv/TopicsAndRawTypes"
