@@ -132,7 +132,8 @@ class TopicBufferWriter:
                 )
             ):
                 self._overflow_data_file.unlink(missing_ok=True)
-                self._current_data_file.rename(self._overflow_data_file)
+                if self._current_data_file.exists():
+                    self._current_data_file.rename(self._overflow_data_file)
             with open(self._current_data_file, "a", encoding="utf-8") as f:
                 f.write(line)
 
