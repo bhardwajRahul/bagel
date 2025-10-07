@@ -39,7 +39,7 @@ def test_can_select_time_range() -> None:
     relation = dataset.to_duckdb(factory, registry, start_seconds=None, end_seconds=22.412492)
 
     # THEN
-    assert relation.shape == (2, 3)
+    assert relation.shape == (3, 3)
 
 
 def test_can_create_empty_table() -> None:

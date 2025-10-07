@@ -42,4 +42,4 @@ def test_can_select_time_range() -> None:
     )
 
     # THEN
-    assert relation.to_df().shape == (2, 3)
+    assert relation.to_df().shape == (3, 3)

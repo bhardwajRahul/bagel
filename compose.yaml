@@ -84,12 +84,15 @@ services:
         UV_VERSION: 0.8.0
         DEV_MODE: false
         MCP_SERVER_PORT: ${MCP_SERVER_PORT}
+        JUPYTER_HOST: ${JUPYTER_HOST}
+        JUPYTER_PORT: ${JUPYTER_PORT}
     environment:
       CONTAINER_MODE: true
     ports:
       - "${MCP_SERVER_PORT}:${MCP_SERVER_PORT}"
-    # volumes:
-    #   - <path-to-local-data>:/home/ubuntu/data
+      - "${JUPYTER_PORT}:${JUPYTER_PORT}"
+    volumes:
+      - /home/shouheng/Development/data:/home/shouheng/Development/data
 
   px4:
     image: ghcr.io/extelligence-ai/bagel/px4:latest
