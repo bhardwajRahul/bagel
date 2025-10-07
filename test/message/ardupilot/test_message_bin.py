@@ -41,7 +41,7 @@ def test_can_select_time_range() -> None:
     )
 
     # THEN
-    assert relation.shape == (5, 66)
+    assert relation.shape == (8, 66)
 
 
 def test_can_create_empty_table() -> None:
