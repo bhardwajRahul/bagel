@@ -89,6 +89,10 @@ RUN if [ "_${DEV_MODE}" = "_true" ]; then \
     else \
     uv sync --no-dev --group ros1; \
     fi
+ARG CV_MODE
+RUN if [ "_${CV_MODE}" = "_true" ]; then \
+    uv sync --group cv; \
+    fi
 
 # Expose MCP server port
 ARG MCP_SERVER_PORT
