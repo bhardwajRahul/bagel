@@ -4,12 +4,15 @@ import abc
 import pathlib
 import uuid
 import weakref
+from collections.abc import Callable
 from typing import Any
 
 import pyarrow as pa
 import yaml
 
+from settings import settings
 from src import artifacts
+from src.pipeline.base import Pipeline
 from src.sink.buffer import TopicBufferWriter
 
 # A global registry to hold singleton instances of TopicSink instances.
@@ -155,33 +158,47 @@ class TopicSink(abc.ABC):
             "magic": "BAGEL_SINK",  # Magic keyword to identify Bagel sink directories
         }
 
-    def subscribe(self, topics: list[str] | None = None, overwrite: bool = False) -> None:
-        """Subscribe to a list of topics.
+    def subscribe(
+        self,
+        topic: str,
+        pipeline: Pipeline | None = None,
+        overwrite: bool = False,
+        buffer_size_bytes: int | None = settings.JSONL_BUFFER_SIZE_PER_TOPIC_BYTES,
+        extract_timestamp: Callable[[dict[str, Any]], float] | None = None,
+    ) -> None:
+        """Subscribe to a topic.
 
         Args:
-            topics (list[str] | None, optional): List of topics to subscribe to. If None,
-                subscribes to all available topics.
+            topic (str): The topic to subscribe to.
+            pipeline (Pipeline | None, optional): An callback pipeline to execute on
+                incoming messages.
             overwrite (bool, optional): If True, overwrite any existing topic buffers.
+            buffer_size_bytes (int | None, optional): The maximum buffer size in bytes before
+                evicting old messages. If None, the buffer size is unbounded.
+            extract_timestamp (Callable[[dict[str, Any]], float] | None, optional):
+                A function to extract a timestamp in seconds from a message. If None,
+                the current system time is used.
 
         Raises:
             TopicNotFoundError: If any requested topic is unavailable.
 
         """
-        topics = topics or self.available_topics
-        missing_topics = [t for t in topics if t not in self.available_topics]
-        if missing_topics:
-            raise TopicNotFoundError(missing_topics)
-        for topic in topics:
-            if topic not in self._buffers:
-                self._buffers[topic] = TopicBufferWriter(
-                    self.directory,
-                    topic,
-                    self._type_name(topic),
-                    self._definition(topic),
-                    self._struct(topic),
-                    overwrite=overwrite,
-                )
-            self._subscribe(self._buffers[topic])
+        if topic not in self.available_topics:
+            raise TopicNotFoundError(topic)
+
+        if topic not in self._buffers:
+            self._buffers[topic] = TopicBufferWriter(
+                self.directory,
+                topic,
+                self._type_name(topic),
+                self._definition(topic),
+                self._struct(topic),
+                buffer_size_bytes=buffer_size_bytes,
+                overwrite=overwrite,
+                pipeline=pipeline,
+                extract_timestamp=extract_timestamp,
+            )
+        self._subscribe(self._buffers[topic])
 
     def pause(self, topics: list[str] | None = None) -> None:
         """Pause subscriptions for topics.

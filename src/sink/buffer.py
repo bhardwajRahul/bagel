@@ -1,13 +1,14 @@
 """File-backed topic buffer writer and reader."""
 
 import json
+import logging
 import pathlib
 import pickle
 import shutil
 import tempfile
 import time
 import uuid
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any
 
 import filelock
@@ -15,6 +16,7 @@ import pyarrow as pa
 import yaml
 
 from settings import settings
+from src.pipeline.base import Pipeline, Unit
 
 
 def _topic_uuid(topic: str) -> str:
@@ -54,8 +56,10 @@ class TopicBufferWriter:
         type_name: str,
         definition: str,
         struct: pa.StructType,
-        buffer_size_bytes: int | None = settings.JSONL_BUFFER_SIZE_PER_TOPIC_BYTES,
-        overwrite: bool = False,
+        buffer_size_bytes: int | None,
+        overwrite: bool,
+        pipeline: Pipeline | None,
+        extract_timestamp: Callable[[dict[str, Any]], float] | None = None,
     ) -> None:
         """Initialize a TopicBufferWriter instance.
 
@@ -65,9 +69,13 @@ class TopicBufferWriter:
             type_name (str): The native type name of the topic.
             definition (str): The message definition of the topic.
             struct (pa.StructType): The PyArrow StructType of the topic.
-            buffer_size_bytes (int | None, optional): The maximum buffer size in bytes.
-                If None, the buffer size is unlimited till disk space is exhausted.
-            overwrite (bool, optional): If True, overwrite any existing topic buffers.
+            buffer_size_bytes (int | None): The maximum buffer size in bytes before
+                evicting old messages. If None, the buffer size is unbounded.
+            overwrite (bool): If True, overwrite any existing topic buffers.
+            pipeline (Pipeline | None): An callback pipeline to execute on incoming messages.
+            extract_timestamp (Callable[[dict[str, Any]], float] | None, optional):
+                A function to extract a timestamp in seconds from a message. If None,
+                the current system time is used.
 
         """
         self._topic = topic
@@ -76,6 +84,7 @@ class TopicBufferWriter:
         self._struct = struct
         self._buffer_size_bytes = buffer_size_bytes
         self._created_at = time.time()
+        self._extract_timestamp = extract_timestamp
 
         metadata = {
             "topic": self._topic,
@@ -110,6 +119,10 @@ class TopicBufferWriter:
                 self._current_data_file.unlink(missing_ok=True)
                 self._overflow_data_file.unlink(missing_ok=True)
 
+        self._pipeline = pipeline
+        self._message_count = 0
+        self._last_run_at = None
+
     @property
     def topic(self) -> str:
         """Topic name for the messages held by this buffer."""
@@ -117,8 +130,9 @@ class TopicBufferWriter:
 
     def append(self, msg: dict[str, Any]) -> None:
         """Append a message to the buffer."""
+        timestamp_seconds = self._extract_timestamp(msg) if self._extract_timestamp else time.time()
         record = {
-            settings.TIMESTAMP_SECONDS_COLUMN_NAME: time.time(),
+            settings.TIMESTAMP_SECONDS_COLUMN_NAME: timestamp_seconds,
             self._topic: msg,
         }
         line = json.dumps(record) + "\n"
@@ -136,6 +150,45 @@ class TopicBufferWriter:
                     self._current_data_file.rename(self._overflow_data_file)
             with open(self._current_data_file, "a", encoding="utf-8") as f:
                 f.write(line)
+
+        if self._pipeline and self._should_run(
+            self._pipeline, self._last_run_at, self._message_count, timestamp_seconds
+        ):
+            try:
+                if self._pipeline.run(timestamp_seconds):
+                    logging.info(
+                        "Pipeline executed at %.4f seconds (%d messages processed in total)",
+                        timestamp_seconds,
+                        self._message_count,
+                    )
+                else:
+                    logging.info(
+                        "Pipeline skipped at %.4f seconds (%d messages processed in total)",
+                        timestamp_seconds,
+                        self._message_count,
+                    )
+            except Exception as e:
+                if not self._pipeline.allow_failure:
+                    raise e
+                logging.error(f"Pipeline execution failed: {e}")
+            finally:
+                self._last_run_at = timestamp_seconds
+
+        self._message_count += 1
+
+    def _should_run(
+        self, pipeline: Pipeline, last_run_at: float | None, message_count: int, asof_seconds: float
+    ) -> bool:
+        if last_run_at is None:
+            return True
+
+        match pipeline.frequency.unit:
+            case Unit.FRAME:
+                return message_count % pipeline.frequency.every == 0
+            case _:
+                return asof_seconds - last_run_at >= pipeline.frequency.to_seconds()
+
+        return False
 
     def _write_metadata(self, metadata: dict[str, Any]) -> None:
         self._metadata_file.parent.mkdir(parents=True, exist_ok=True)
