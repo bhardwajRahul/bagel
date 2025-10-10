@@ -4,6 +4,7 @@ import pyarrow as pa
 import roslibpy
 from roslibpy import ros
 
+from settings import settings
 from src.di import module
 from src.sink import base, buffer
 from src.topic.ros1 import parse, schema
@@ -20,12 +21,14 @@ class TopicSink(base.TopicSink):
 
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         host: str,
         port: int,
         is_secure: bool = False,
         headers: dict[str, str] | None = None,
+        queue_length: int = settings.ROSBRIDGE_QUEUE_LENGTH,
+        throttle_rate: int = 0,
     ) -> None:
         """Initialize the ROS1 bridge topic sink.
 
@@ -35,9 +38,17 @@ class TopicSink(base.TopicSink):
             is_secure (bool, optional): If True, use a secure WebSocket connection.
             headers (dict[str, str] | None, optional): Additional headers to include in
                 the WebSocket connection.
+            queue_length (int, optional): Number of incoming messages to buffer at the rosbridge
+                server when subscribing. If the buffer is full, older messages are dropped as
+                new ones arrive.
+            throttle_rate (int, optional): Minimum time (in milliseconds) between messages
+                received by the subscriber. If messages are arriving faster than this
+                rate, some will be dropped.
 
         """
         self._client = roslibpy.Ros(host=host, port=port, is_secure=is_secure, headers=headers)
+        self._queue_length = queue_length
+        self._throttle_rate = throttle_rate
 
         super().__init__(host, port)  # establish connection
 
@@ -79,7 +90,11 @@ class TopicSink(base.TopicSink):
     def _subscribe(self, writer: buffer.TopicBufferWriter) -> None:
         if writer.topic not in self._subscribers:
             self._subscribers[writer.topic] = roslibpy.Topic(
-                self._client, writer.topic, self._type_name(writer.topic)
+                ros=self._client,
+                name=writer.topic,
+                message_type=self._type_name(writer.topic),
+                queue_length=self._queue_length,
+                throttle_rate=self._throttle_rate,
             )
         self._subscribers[writer.topic].subscribe(callback=writer.append)
 
