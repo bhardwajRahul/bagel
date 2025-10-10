@@ -21,6 +21,7 @@ jobs:
           - service: ros2-iron
           - service: ros2-humble
           - service: ros1-noetic
+          - service: ros1-noetic-cv
           # Drones
           - service: px4
           - service: ardupilot
