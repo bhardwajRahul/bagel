@@ -85,15 +85,16 @@ COPY --chown=${USERNAME}:${USERNAME} pyproject.toml ./
 COPY --chown=${USERNAME}:${USERNAME} uv.lock ./
 ARG DEV_MODE
 ARG CV_MODE
+# hadolint ignore=SC2086
 RUN set -eux; \
     groups="--group ros1"; \
     if [ "_${CV_MODE}" = "_true" ]; then \
     groups="${groups} --group cv"; \
     fi; \
     if [ "_${DEV_MODE}" = "_true" ]; then \
-    uv sync "${groups}"; \
+    uv sync ${groups}; \
     else \
-    uv sync --no-dev "${groups}"; \
+    uv sync --no-dev ${groups}; \
     fi
 
 # Expose MCP server port
