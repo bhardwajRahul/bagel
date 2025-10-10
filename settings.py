@@ -30,7 +30,10 @@ class Settings(BaseSettings):
     ARROW_RECORD_BATCH_SIZE_BYTES: int = 1 * GB
 
     # Bytes per topic buffer in a topic sink. Always respected
-    JSONL_BUFFER_SIZE_PER_TOPIC_BYTES: int = 50 * MB
+    JSONL_BUFFER_SIZE_PER_TOPIC_BYTES: int = 1 * GB
+
+    # Number of messages to buffer in rosbridge before sending over the WebSocket
+    ROSBRIDGE_QUEUE_LENGTH: int = 1000
 
     # Column name for timestamps in arrow files, i.e., when messages were recorded
     TIMESTAMP_SECONDS_COLUMN_NAME: str = "timestamp_seconds"

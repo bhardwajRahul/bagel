@@ -21,6 +21,7 @@ jobs:
           - service: ros2-iron
           - service: ros2-humble
           - service: ros1-noetic
+          - service: ros1-noetic-cv
           # Drones
           - service: px4
           - service: ardupilot
@@ -28,10 +29,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - name: Build and test ${{ matrix.service }}
-        run: |
-          # Build the image
-          docker compose build ${{ matrix.service }} --build-arg DEV_MODE=true
-
-          # Run unit tests
-          docker compose run ${{ matrix.service }} uv run pytest -p no:warnings ./test
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /usr/lib/jvm
+      - name: Build ${{ matrix.service }}
+        run: docker compose build ${{ matrix.service }} --build-arg DEV_MODE=true
+      - name: Test ${{ matrix.service }}
+        run: docker compose run ${{ matrix.service }} uv run pytest -p no:warnings ./test
