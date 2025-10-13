@@ -16,7 +16,7 @@ import pyarrow as pa
 import yaml
 
 from settings import settings
-from src.pipeline.base import Pipeline, Unit
+from src.pipeline.base import Cadence, Frequency, Pipeline, Unit
 
 
 def _topic_uuid(topic: str) -> str:
@@ -122,11 +122,40 @@ class TopicBufferWriter:
         self._pipeline = pipeline
         self._message_count = 0
         self._last_run_at = None
+        self._last_timestamp_seconds = None
 
     @property
     def topic(self) -> str:
         """Topic name for the messages held by this buffer."""
         return self._topic
+
+    @property
+    def pipeline(self) -> Pipeline | None:
+        """The callback pipeline associated with this buffer, if any."""
+        return self._pipeline
+
+    @property
+    def last_run_at(self) -> float | None:
+        """The last time the pipeline was run, in seconds.
+
+        If None, the pipeline has never been run.
+
+        """
+        return self._last_run_at
+
+    @property
+    def message_count(self) -> int:
+        """The total number of messages observed by this buffer."""
+        return self._message_count
+
+    @property
+    def last_timestamp_seconds(self) -> float | None:
+        """The timestamp in seconds extracted from the last message.
+
+        If None, no messages have been received yet.
+
+        """
+        return self._last_timestamp_seconds
 
     def append(self, msg: dict[str, Any]) -> None:
         """Append a message to the buffer."""
@@ -151,42 +180,52 @@ class TopicBufferWriter:
             with open(self._current_data_file, "a", encoding="utf-8") as f:
                 f.write(line)
 
-        if self._pipeline and self._should_run(
-            self._pipeline, self._last_run_at, self._message_count, timestamp_seconds
+        if self.pipeline and self._should_run(
+            self.pipeline.cadence, self.message_count, self.last_run_at, timestamp_seconds
         ):
             try:
-                if self._pipeline.run(timestamp_seconds):
+                if self.pipeline.run(timestamp_seconds):
                     logging.info(
-                        "Pipeline executed at %.4f seconds (%d messages processed in total)",
+                        "Pipeline '%s' executed successfully when topic '%s' received message at %.4f seconds",  # noqa: E501
+                        self.pipeline.name,
+                        self.topic,
                         timestamp_seconds,
-                        self._message_count,
                     )
                 else:
-                    logging.info(
-                        "Pipeline skipped at %.4f seconds (%d messages processed in total)",
+                    logging.debug(
+                        "Pipeline '%s' didn't pass the gating criteria when topic '%s' received message at %.4f seconds",  # noqa: E501
+                        self.pipeline.name,
+                        self.topic,
                         timestamp_seconds,
-                        self._message_count,
                     )
             except Exception as e:
-                if not self._pipeline.allow_failure:
+                if not self.pipeline.allow_failure:
                     raise e
-                logging.error(f"Pipeline execution failed: {e}")
+                logging.error(
+                    "Pipeline '%s' execution failed when topic '%s' received message at %.4f seconds: %s",  # noqa: E501
+                    self.pipeline.name,
+                    self.topic,
+                    timestamp_seconds,
+                    str(e),
+                )
             finally:
                 self._last_run_at = timestamp_seconds
 
         self._message_count += 1
+        self._last_timestamp_seconds = timestamp_seconds
 
     def _should_run(
-        self, pipeline: Pipeline, last_run_at: float | None, message_count: int, asof_seconds: float
+        self, cadence: Cadence, message_count: int, last_run_at: float | None, asof_seconds: float
     ) -> bool:
         if last_run_at is None:
             return True
 
-        match pipeline.frequency.unit:
-            case Unit.FRAME:
-                return message_count % pipeline.frequency.every == 0
-            case _:
-                return asof_seconds - last_run_at >= pipeline.frequency.to_seconds()
+        if isinstance(cadence, Frequency):
+            match cadence.unit:
+                case Unit.FRAME:
+                    return message_count % cadence.every == 0
+                case _:
+                    return asof_seconds - last_run_at >= cadence.to_seconds()
 
         return False
 

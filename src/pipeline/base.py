@@ -40,8 +40,14 @@ def _to_seconds(value: int, unit: Unit) -> float:
             raise ValueError(f"Cannot convert {unit} to seconds")
 
 
-class Frequency(BaseModel):
-    """Execution frequency of a pipeline.
+class Cadence(BaseModel):
+    """Base class for pipeline execution cadence."""
+
+    pass
+
+
+class Frequency(Cadence):
+    """A cadence type indicating a pipeline should run at a fixed frequency.
 
     For example, every 5 minutes, every 30 frames, etc.
 
@@ -58,6 +64,17 @@ class Frequency(BaseModel):
     def build(every: int, unit: str) -> "Frequency":
         """Return a Frequency object from the given configuration."""
         return Frequency(every=every, unit=Unit(unit))
+
+
+class AtTheEnd(Cadence):
+    """A cadence type indicating a pipeline should run at the natural end of the data source.
+
+    For example, if the data source is ROS2 bag, the pipeline will run when the bag reaches the end.
+    If the data source is a live data stream, the pipeline will run when the stream is closed.
+
+    """
+
+    pass
 
 
 class Lookback(BaseModel):
@@ -122,7 +139,8 @@ class Pipeline:
 
     def __init__(
         self,
-        frequency: Frequency,
+        name: str,
+        cadence: Cadence,
         gates: list[Gate],
         tasks: list[Task],
         allow_failure: bool = False,
@@ -130,7 +148,10 @@ class Pipeline:
         """Initialize the Pipeline.
 
         Args:
-            frequency (Frequency): How often the pipeline should run.
+            name (str): The name of the pipeline.
+            cadence (Cadence): The execution cadence of the pipeline. It can be either:
+                - Frequency: The pipeline runs at a regular interval.
+                - AtTheEnd: The pipeline runs at the natural end of the data source.
             gates (list[Gate]): A list of gates to evaluate before running the pipeline.
             tasks (list[Task]): A list of tasks to execute in the pipeline.
             allow_failure (bool, optional): Whether to allow task failures. Defaults to False.
@@ -142,16 +163,21 @@ class Pipeline:
         """
         if not tasks:
             raise ValueError("At least one task must be provided")
-
-        self._frequency = frequency
+        self._name = name
+        self._cadence = cadence
         self._gates = gates
         self._tasks = tasks
         self._allow_failure = allow_failure
 
     @property
-    def frequency(self) -> Frequency:
-        """Return the frequency of the pipeline."""
-        return self._frequency
+    def name(self) -> str:
+        """Return the name of the pipeline."""
+        return self._name
+
+    @property
+    def cadence(self) -> Cadence:
+        """Return the execution cadence of the pipeline."""
+        return self._cadence
 
     @property
     def allow_failure(self) -> bool:
@@ -169,9 +195,15 @@ class Pipeline:
     @staticmethod
     def build(args: dict[str, Any]) -> "Pipeline":
         """Return a Pipeline object from the given configuration."""
-        if "frequency" not in args:
-            raise MissingRequiredKeyError("frequency")
-        frequency = Frequency.build(args["frequency"]["every"], args["frequency"]["unit"])
+        if "cadence" not in args:
+            raise MissingRequiredKeyError("cadence")
+        match args["cadence"]:
+            case {"every": every, "unit": unit}:
+                cadence = Frequency.build(every, unit)
+            case "at_the_end":
+                cadence = AtTheEnd()
+            case _:
+                raise ValueError("Invalid cadence configuration")
 
         gates = [
             Pipeline._provide(gate_args["module"], gate_args.get("args", {}))
@@ -190,7 +222,7 @@ class Pipeline:
             inspect.signature(Pipeline.__init__).parameters["allow_failure"].default,
         )
 
-        return Pipeline(frequency=frequency, gates=gates, tasks=tasks, allow_failure=allow_failure)
+        return Pipeline(cadence=cadence, gates=gates, tasks=tasks, allow_failure=allow_failure)
 
     @staticmethod
     def _provide(name: str, args: dict[str, Any]) -> object:
