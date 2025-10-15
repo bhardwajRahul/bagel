@@ -13,7 +13,7 @@ def to_duckdb(  # noqa: PLR0913
     factory: SourceFactory,
     registry: TopicRegistry,
     dataset: MessageDataset,
-    topics: list[str],
+    topics: list[str] | None,
     asof_seconds: float,
     lookback: base.Lookback | None = None,
     ffill: bool = False,

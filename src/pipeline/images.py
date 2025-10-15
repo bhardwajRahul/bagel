@@ -14,7 +14,7 @@ def to_images(  # noqa: PLR0913
     factory: SourceFactory,
     registry: TopicRegistry,
     dataset: ImageDataset,
-    topics: list[str],
+    topics: list[str] | None,
     asof_seconds: float,
     lookback: base.Lookback | None = None,
 ) -> Iterator[tuple[str, float, Image.Image]]:
