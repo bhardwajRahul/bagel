@@ -36,10 +36,10 @@ def test_can_select_time_range() -> None:
     dataset = MessageDataset(use_cache=True)
 
     # WHEN
-    relation = dataset.to_duckdb(factory, registry, start_seconds=None, end_seconds=436440.63)
+    relation = dataset.to_duckdb(factory, registry, start_seconds=None, end_seconds=470.0)
 
     # THEN
-    assert relation.shape == (3, 78)
+    assert relation.shape == (895, 78)
 
 
 def test_can_create_empty_table() -> None:
