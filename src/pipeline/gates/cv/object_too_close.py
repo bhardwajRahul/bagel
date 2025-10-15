@@ -23,7 +23,7 @@ depth_processor = AutoImageProcessor.from_pretrained(DEPTH_MODEL_ID)
 depth_model = AutoModelForDepthEstimation.from_pretrained(DEPTH_MODEL_ID)
 
 
-class ObjectTooCloseGate(base.TopicImageMixin, base.Gate):
+class ObjectTooCloseGate(images.TopicImageMixin, base.Gate):
     """Estimate depth on detected objects to determine whether they are too close.
 
     The lookback window may include multiple images, each with several detected objects.
@@ -81,13 +81,8 @@ class ObjectTooCloseGate(base.TopicImageMixin, base.Gate):
 
     def evaluate(self, asof_seconds: float, lookback: base.Lookback | None) -> bool:
         """Evaluate whether the gating criteria is met at the given time."""
-        for _, _, image in images.to_images(
-            factory=self.factory,
-            registry=self.registry,
-            dataset=self.dataset,
-            topics=[self._topic],
-            asof_seconds=asof_seconds,
-            lookback=lookback,
+        for _, _, image in self.to_images(
+            topics=[self._topic], asof_seconds=asof_seconds, lookback=lookback
         ):
             # Object detection
             yolo_inputs = yolo_processor(images=image, return_tensors="pt")

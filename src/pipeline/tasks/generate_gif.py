@@ -9,7 +9,7 @@ from src.di import module
 from src.pipeline import base, images
 
 
-class GenerateGifTask(base.TopicImageMixin, base.Task):
+class GenerateGifTask(images.TopicImageMixin, base.Task):
     """Generate a GIF file from images in a topic."""
 
     def __init__(
@@ -43,13 +43,8 @@ class GenerateGifTask(base.TopicImageMixin, base.Task):
         frames = []
         first_timestamp_text, first_image = None, None
 
-        for _, timestamp_seconds, image in images.to_images(
-            factory=self.factory,
-            registry=self.registry,
-            dataset=self.dataset,
-            topics=[self._topic],
-            asof_seconds=asof_seconds,
-            lookback=lookback,
+        for _, timestamp_seconds, image in self.to_images(
+            topics=[self._topic], asof_seconds=asof_seconds, lookback=lookback
         ):
             timestamp_text = f"{timestamp_seconds:.8f}"
 

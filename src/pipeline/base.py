@@ -3,22 +3,16 @@
 import abc
 import importlib
 import logging
-import pathlib
 from collections.abc import Iterator
 from enum import Enum
 from typing import Any
 
-import yaml
 from pydantic import BaseModel
 
 from settings import settings
 from src.di import module
 from src.di.types.base_module import BaseModule
-from src.di.types.data_source import DataSource, resolve
-from src.image.base import ImageDataset
-from src.message.base import MessageDataset
-from src.source.base import SourceFactory
-from src.topic.base import TopicRegistry
+from src.di.types.data_source import resolve
 
 SECOND = 1
 MINUTE = 60 * SECOND
@@ -164,77 +158,6 @@ class Operator(abc.ABC):
         return instance
 
 
-class TopicMessageMixin:
-    """Mixin for operators that work on messages in a topic."""
-
-    _factory: SourceFactory
-    _registry: TopicRegistry
-    _dataset: MessageDataset
-
-    @property
-    def factory(self) -> SourceFactory:  # noqa: D102
-        return self._factory
-
-    @property
-    def registry(self) -> TopicRegistry:  # noqa: D102
-        return self._registry
-
-    @property
-    def dataset(self) -> MessageDataset:  # noqa: D102
-        return self._dataset
-
-    def setup(self, path: str, **kwargs) -> None:  # noqa: ANN003, D102
-        ds_type = resolve(path)
-
-        factory_module = f"{BaseModule.SOURCE_FACTORY.value}.{ds_type.value}"
-        registry_module = f"{BaseModule.TOPIC_REGISTRY.value}.{ds_type.value}"
-        dataset_module = f"{BaseModule.MESSAGE_DATASET.value}.{ds_type.value}"
-
-        self._factory = module.provide(factory_module, {"path": path, **kwargs})
-        self._registry = module.provide(registry_module, {**kwargs})
-        self._dataset = module.provide(dataset_module, {**kwargs})
-
-
-class TopicImageMixin:
-    """Mixin for operators that work on images in a topic."""
-
-    _factory: SourceFactory
-    _registry: TopicRegistry
-    _dataset: ImageDataset
-
-    @property
-    def factory(self) -> SourceFactory:  # noqa: D102
-        return self._factory
-
-    @property
-    def registry(self) -> TopicRegistry:  # noqa: D102
-        return self._registry
-
-    @property
-    def dataset(self) -> ImageDataset:  # noqa: D102
-        return self._dataset
-
-    def setup(self, path: str, **kwargs) -> None:  # noqa: ANN003, D102
-        ds_type = resolve(path)
-
-        factory_module = f"{BaseModule.SOURCE_FACTORY.value}.{ds_type.value}"
-        registry_module = f"{BaseModule.TOPIC_REGISTRY.value}.{ds_type.value}"
-        dataset_module = None
-        match ds_type:
-            case DataSource.ROS1_BAG:
-                dataset_module = f"{BaseModule.IMAGE_DATASET.value}.ros1.bag"
-            case DataSource.BAGEL_SINK:
-                metadata_file = pathlib.Path(path) / "metadata.yaml"
-                metadata = yaml.safe_load(metadata_file.read_text())
-                dataset_module = metadata.get("image_dataset_module")
-        if dataset_module is None:
-            raise ValueError(f"{ds_type} not supported")
-
-        self._factory = module.provide(factory_module, {"path": path, **kwargs})
-        self._registry = module.provide(registry_module, {**kwargs})
-        self._dataset = module.provide(dataset_module, {**kwargs})
-
-
 class Gate(Operator):
     """Abstract base class for gating operators.
 
@@ -371,14 +294,14 @@ class Pipeline:
                 for task, lookback in self._tasks:
                     task.execute(asof_seconds, lookback)
                 logging.info(
-                    "Pipeline '%s' executed successfully when topic '%s' received message at %.4f seconds",  # noqa: E501
+                    "Pipeline '%s' executed when topic '%s' received message at %.4f seconds",
                     self.name,
                     self.cadence.topic,
                     asof_seconds,
                 )
             else:
                 logging.info(
-                    "Pipeline '%s' didn't pass the gating criteria when topic '%s' received message at %.4f seconds",  # noqa: E501
+                    "Pipeline '%s' skipped when topic '%s' received message at %.4f seconds",
                     self.name,
                     self.cadence.topic,
                     asof_seconds,
@@ -387,7 +310,7 @@ class Pipeline:
             if not self._allow_failure:
                 raise e
             logging.error(
-                "Pipeline '%s' execution failed when topic '%s' received message at %.4f seconds: %s",  # noqa: E501
+                "Pipeline '%s' failed when topic '%s' received message at %.4f seconds: %s",
                 self.name,
                 self.cadence.topic,
                 asof_seconds,

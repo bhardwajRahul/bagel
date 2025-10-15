@@ -6,7 +6,7 @@ from src.di import module
 from src.pipeline import base, messages
 
 
-class SqlQueryGate(base.TopicMessageMixin, base.Gate):
+class SqlQueryGate(messages.TopicMessageMixin, base.Gate):
     """Run a SQL query on topic messages at a given time to determine if gating criteria is met."""
 
     def __init__(self, topic: str, statement: str) -> None:
@@ -24,13 +24,8 @@ class SqlQueryGate(base.TopicMessageMixin, base.Gate):
 
     def evaluate(self, asof_seconds: float, lookback: base.Lookback | None) -> bool:
         """Evaluate whether the gating criteria is met at the given time."""
-        relation = messages.to_duckdb(
-            factory=self.factory,
-            registry=self.registry,
-            dataset=self.dataset,
-            topics=[self._topic],
-            asof_seconds=asof_seconds,
-            lookback=lookback,
+        relation = self.to_duckdb(
+            topics=[self._topic], asof_seconds=asof_seconds, lookback=lookback
         )
         duckdb.register(self._topic, relation)
         result = duckdb.sql(self._statement).fetchall()

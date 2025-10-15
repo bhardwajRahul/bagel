@@ -17,7 +17,7 @@ class OutputFormat(Enum):
     ARROW = "arrow"
 
 
-class WriteTopicsToFileTask(base.TopicMessageMixin, base.Task):
+class WriteTopicsToFileTask(messages.TopicMessageMixin, base.Task):
     """Write messages from specified topics to a file."""
 
     def __init__(
@@ -50,15 +50,8 @@ class WriteTopicsToFileTask(base.TopicMessageMixin, base.Task):
     def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> None:
         """Execute the task at the given time."""
         topics = self._topics or self.registry.available_topics(self.factory.build())
-
-        relation = messages.to_duckdb(
-            factory=self.factory,
-            registry=self.registry,
-            dataset=self.dataset,
-            topics=topics,
-            asof_seconds=asof_seconds,
-            lookback=lookback,
-            ffill=self._ffill,
+        relation = self.to_duckdb(
+            topics=topics, asof_seconds=asof_seconds, lookback=lookback, ffill=self._ffill
         )
 
         digest = short_digest([*topics, str(lookback), str(self._ffill)])
