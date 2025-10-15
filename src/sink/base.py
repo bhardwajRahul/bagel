@@ -1,6 +1,7 @@
 """Abstract base class for topic sinks."""
 
 import abc
+import logging
 import pathlib
 import uuid
 import weakref
@@ -12,7 +13,7 @@ import yaml
 
 from settings import settings
 from src import artifacts
-from src.pipeline.base import Pipeline
+from src.pipeline.base import OnceAtEnd, Pipeline
 from src.sink.buffer import TopicBufferWriter
 
 # A global registry to hold singleton instances of TopicSink instances.
@@ -21,6 +22,10 @@ _global_sink_singletons: dict[tuple[str, int], "TopicSink"] = {}  # (host, port)
 
 class TopicNotFoundError(Exception):
     """Raised when topic is not found."""
+
+
+class TopicAlreadySubscribedError(Exception):
+    """Raised when topic is already subscribed."""
 
 
 class TopicSink(abc.ABC):
@@ -168,11 +173,14 @@ class TopicSink(abc.ABC):
     ) -> None:
         """Subscribe to a topic.
 
+        A topic can only be subscribed once, unless using `overwrite=True` to re-subscribe.
+
         Args:
             topic (str): The topic to subscribe to.
             pipeline (Pipeline | None, optional): An callback pipeline to execute on
                 incoming messages.
-            overwrite (bool, optional): If True, overwrite any existing topic buffers.
+            overwrite (bool, optional): If True, re-subscribe to the topic and overwrite any
+                existing topic buffers.
             buffer_size_bytes (int | None, optional): The maximum buffer size in bytes before
                 evicting old messages. If None, the buffer size is unbounded.
             extract_timestamp (Callable[[dict[str, Any]], float] | None, optional):
@@ -186,18 +194,24 @@ class TopicSink(abc.ABC):
         if topic not in self.available_topics:
             raise TopicNotFoundError(topic)
 
-        if topic not in self._buffers:
-            self._buffers[topic] = TopicBufferWriter(
-                self.directory,
-                topic,
-                self._type_name(topic),
-                self._definition(topic),
-                self._struct(topic),
-                buffer_size_bytes=buffer_size_bytes,
-                overwrite=overwrite,
-                pipeline=pipeline,
-                extract_timestamp=extract_timestamp,
-            )
+        if topic in self._buffers and not overwrite:
+            raise TopicAlreadySubscribedError(topic)
+
+        self._buffers[topic] = TopicBufferWriter(
+            self.directory,
+            topic,
+            self._type_name(topic),
+            self._definition(topic),
+            self._struct(topic),
+            buffer_size_bytes=buffer_size_bytes,
+            overwrite=overwrite,
+            pipeline=pipeline,
+            extract_timestamp=extract_timestamp,
+        )
+
+        if topic in self._buffers and overwrite:
+            self._unsubscribe(self._buffers[topic])
+
         self._subscribe(self._buffers[topic])
 
     def pause(self, topics: list[str] | None = None) -> None:
@@ -222,7 +236,7 @@ class TopicSink(abc.ABC):
             self._unsubscribe(self._buffers[topic])
 
     def close(self) -> None:
-        """Disconnect and release all resources.
+        """Disconnect from the data stream, run any pending pipelines, and release all resources.
 
         Notes:
             After closing, the sink must not be reused.
@@ -233,6 +247,28 @@ class TopicSink(abc.ABC):
             self._disconnect()
         finally:
             del _global_sink_singletons[(self.host, self.port)]
+
+            while self._buffers:
+                topic, writer = self._buffers.popitem()
+                if writer.pipeline is not None and isinstance(
+                    writer.pipeline.cadence.when, OnceAtEnd
+                ):
+                    if writer.last_timestamp_seconds is None:
+                        logging.info(
+                            "No messages received on topic '%s', skipping pipeline '%s'",
+                            topic,
+                            writer.pipeline.name,
+                        )
+                    elif writer.last_run_at == writer.last_timestamp_seconds:
+                        logging.info(
+                            "Pipeline '%s' already executed on topic '%s' at the end, skipping",
+                            topic,
+                            writer.pipeline.name,
+                        )
+                    else:
+                        writer.pipeline.run_at(writer.last_timestamp_seconds)
+                if writer.pipeline is not None:
+                    logging.info("Pipeline '%s' completed.", writer.pipeline.name)
 
     def __enter__(self) -> "TopicSink":  # noqa: D105
         return self

@@ -28,8 +28,8 @@ def to_images(  # noqa: PLR0913
         start_seconds = asof_seconds - lookback.to_seconds()
 
     images = dataset.images(
-        factory,
-        registry,
+        factory=factory,
+        registry=registry,
         topics=topics,
         start_seconds=start_seconds,
         end_seconds=asof_seconds,
