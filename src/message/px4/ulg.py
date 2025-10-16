@@ -10,7 +10,8 @@ from pyulog import core
 from src.di import module
 from src.message import base
 
-MILLISECOND = 1
+MICROSECOND = 1
+MILLISECOND = 1_000 * MICROSECOND
 SECOND = 1_000 * MILLISECOND
 
 
