@@ -8,7 +8,7 @@ from src.di.types.base_module import BaseModule
 from src.di.types.data_source import resolve
 from src.message.base import MessageDataset
 from src.pipeline import base
-from src.source.base import SourceFactory
+from src.source.base import BoundedSourceFactory, SourceFactory
 from src.topic.base import TopicRegistry
 
 
@@ -20,15 +20,18 @@ class TopicMessageMixin:
     _dataset: MessageDataset
 
     @property
-    def factory(self) -> SourceFactory:  # noqa: D102
+    def factory(self) -> SourceFactory:
+        """Return the source factory."""
         return self._factory
 
     @property
-    def registry(self) -> TopicRegistry:  # noqa: D102
+    def registry(self) -> TopicRegistry:
+        """Return the topic registry."""
         return self._registry
 
     @property
-    def dataset(self) -> MessageDataset:  # noqa: D102
+    def dataset(self) -> MessageDataset:
+        """Return the message dataset."""
         return self._dataset
 
     def setup(self, path: str, **kwargs) -> None:  # noqa: ANN003
@@ -63,15 +66,33 @@ class TopicMessageMixin:
         ):
             start_seconds = asof_seconds - lookback.to_seconds()
 
-        relation = self.dataset.to_duckdb(
-            factory=self.factory,
-            registry=self.registry,
-            topics=topics,
-            start_seconds=start_seconds,
-            end_seconds=asof_seconds,
-            ffill=ffill,
-            empty=False,
-        )
+        if isinstance(self.factory, BoundedSourceFactory) and self.dataset.use_cache:
+            relation = self.dataset.to_duckdb(
+                factory=self.factory,
+                registry=self.registry,
+                topics=topics,
+                start_seconds=None,
+                end_seconds=None,
+                ffill=ffill,
+                empty=False,
+            )
+            if start_seconds is not None:
+                relation = relation.filter(
+                    f"{settings.TIMESTAMP_SECONDS_COLUMN_NAME} >= {start_seconds}"
+                )
+            relation = relation.filter(
+                f"{settings.TIMESTAMP_SECONDS_COLUMN_NAME} <= {asof_seconds}"
+            )
+        else:
+            relation = self.dataset.to_duckdb(
+                factory=self.factory,
+                registry=self.registry,
+                topics=topics,
+                start_seconds=start_seconds,
+                end_seconds=asof_seconds,
+                ffill=ffill,
+                empty=False,
+            )
 
         if lookback and lookback.unit == base.Unit.FRAME:
             relation = (

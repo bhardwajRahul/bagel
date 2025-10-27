@@ -1,6 +1,7 @@
 """Mixin for topic image processing operators."""
 
 import pathlib
+from collections import deque
 from collections.abc import Iterator
 
 import yaml
@@ -11,7 +12,7 @@ from src.di.types.base_module import BaseModule
 from src.di.types.data_source import DataSource, resolve
 from src.image.base import ImageDataset
 from src.pipeline import base
-from src.source.base import SourceFactory
+from src.source.base import BoundedSourceFactory, SourceFactory
 from src.topic.base import TopicRegistry
 
 
@@ -23,15 +24,18 @@ class TopicImageMixin:
     _dataset: ImageDataset
 
     @property
-    def factory(self) -> SourceFactory:  # noqa: D102
+    def factory(self) -> SourceFactory:
+        """Return the source factory."""
         return self._factory
 
     @property
-    def registry(self) -> TopicRegistry:  # noqa: D102
+    def registry(self) -> TopicRegistry:
+        """Return the topic registry."""
         return self._registry
 
     @property
-    def dataset(self) -> ImageDataset:  # noqa: D102
+    def dataset(self) -> ImageDataset:
+        """Return the image dataset."""
         return self._dataset
 
     def setup(self, path: str, **kwargs) -> None:  # noqa: ANN003
@@ -74,15 +78,33 @@ class TopicImageMixin:
         ):
             start_seconds = asof_seconds - lookback.to_seconds()
 
-        images = self.dataset.images(
-            factory=self.factory,
-            registry=self.registry,
-            topics=topics,
-            start_seconds=start_seconds,
-            end_seconds=asof_seconds,
-        )
+        if isinstance(self.factory, BoundedSourceFactory) and self.dataset.use_cache:
+            images = self.dataset.images(
+                factory=self.factory,
+                registry=self.registry,
+                topics=topics,
+                start_seconds=None,
+                end_seconds=None,
+            )
+            images = iter(
+                (topic, timestamp, image)
+                for topic, timestamp, image in images
+                if (start_seconds is None or timestamp >= start_seconds)
+                and timestamp <= asof_seconds
+            )
+        else:
+            images = self.dataset.images(
+                factory=self.factory,
+                registry=self.registry,
+                topics=topics,
+                start_seconds=start_seconds,
+                end_seconds=asof_seconds,
+            )
 
         if lookback and lookback.unit == base.Unit.FRAME:
-            images = list(images)[-lookback.last :]
+            queue = deque(maxlen=lookback.last)
+            for item in images:
+                queue.append(item)
+            images = iter(queue)
 
         yield from images

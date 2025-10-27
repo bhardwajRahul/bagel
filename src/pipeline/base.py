@@ -10,6 +10,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from settings import settings
+from src import artifacts
 from src.di import module
 from src.di.types.base_module import BaseModule
 from src.di.types.data_source import resolve
@@ -126,6 +127,44 @@ class Cadence(BaseModel):
 class Operator(abc.ABC):
     """Abstract base class for gate and task operators."""
 
+    # Attributes set during Pipeline.build
+    _name: str
+    _pipeline: str
+    _site: str
+    _asset: str
+    _path: str
+    _log_id: str
+
+    @property
+    def name(self) -> str:
+        """The name of the operator."""
+        return self._name
+
+    @property
+    def pipeline(self) -> str:
+        """The name of the parent pipeline."""
+        return self._pipeline
+
+    @property
+    def site(self) -> str:
+        """The name of the deployment site."""
+        return self._site
+
+    @property
+    def asset(self) -> str:
+        """The name of the asset in the deployment site."""
+        return self._asset
+
+    @property
+    def path(self) -> str:
+        """The filesystem path or URL to the data source."""
+        return self._path
+
+    @property
+    def log_id(self) -> str:
+        """A unique identifier for the path of an asset in a deployment site."""
+        return self._log_id
+
     @abc.abstractmethod
     def setup(self, path: str, **kwargs) -> None:  # noqa: ANN003
         """Initialize the operator using the given data source.
@@ -140,10 +179,19 @@ class Operator(abc.ABC):
         """
 
     @staticmethod
-    def build(path: str, config: dict[str, Any]) -> "Operator":
+    def build(
+        pipeline: str,
+        site: str,
+        asset: str,
+        path: str,
+        config: dict[str, Any],
+    ) -> "Operator":
         """Build an Operator instance from a config dictionary of a gate or task.
 
         Args:
+            pipeline (str): The name of the pipeline.
+            site (str): The name of the deployment site.
+            asset (str): The name of the asset in the deployment site.
             path (str): Filesystem path or URL to the data source.
             config (dict[str, Any]): Configuration dictionary for the operator.
 
@@ -155,6 +203,17 @@ class Operator(abc.ABC):
         cls = module.global_registry[config["module"]]
         instance: Operator = cls(**config.get("args", {}))
         instance.setup(path=path, **config.get("setup_args", {}))
+
+        name = config.get("name", artifacts.to_lower_snake_case(cls.__name__))
+        if not artifacts.is_lower_snake_case(name):
+            raise ValueError(f"Operator name '{name}' is not in lower_snake_case format.")
+        instance._name = name
+        instance._pipeline = pipeline
+        instance._site = site
+        instance._asset = asset
+        instance._path = path
+        instance._log_id = artifacts.generate_log_uuid(site, asset, path)
+
         return instance
 
 
@@ -212,6 +271,8 @@ class Pipeline:
     def __init__(  # noqa: PLR0913
         self,
         name: str,
+        site: str,
+        asset: str,
         path: str,
         allow_failure: bool,
         cadence: Cadence,
@@ -221,7 +282,9 @@ class Pipeline:
         """Initialize a Pipeline instance.
 
         Args:
-            name (str): The name of the pipeline.
+            name (str): The name of the pipeline, in lower_snake_case format.
+            site (str): The name of the deployment site, in lower_snake_case format.
+            asset (str): The name of the asset in the deployment site, in lower_snake_case format.
             path (str): Filesystem path or URL to the data source.
             allow_failure (bool): Whether to continue executing pipeline runs if a run fails.
             cadence (Cadence): How often to run the pipeline.
@@ -231,7 +294,18 @@ class Pipeline:
                 lookback windows.
 
         """
+        if not artifacts.is_lower_snake_case(name):
+            raise ValueError(f"Pipeline name '{name}' is not in lower_snake_case format.")
         self._name = name
+
+        if not artifacts.is_lower_snake_case(site):
+            raise ValueError(f"Site name '{site}' is not in lower_snake_case format.")
+        self._site = site
+
+        if not artifacts.is_lower_snake_case(asset):
+            raise ValueError(f"Asset name '{asset}' is not in lower_snake_case format.")
+        self._asset = asset
+
         self._path = path
         self._allow_failure = allow_failure
         self._cadence = cadence
@@ -242,6 +316,16 @@ class Pipeline:
     def name(self) -> str:
         """The name of the pipeline."""
         return self._name
+
+    @property
+    def site(self) -> str:
+        """The name of the deployment site."""
+        return self._site
+
+    @property
+    def asset(self) -> str:
+        """The name of the asset in the deployment site."""
+        return self._asset
 
     @property
     def cadence(self) -> Cadence:
@@ -257,6 +341,7 @@ class Pipeline:
         registry = module.provide(f"{BaseModule.TOPIC_REGISTRY.value}.{ds_type.value}", {})
         dataset = module.provide(f"{BaseModule.MESSAGE_DATASET.value}.{ds_type.value}", {})
 
+        logging.info("Gathering timestamps for pipeline '%s'...", self.name)
         relation = dataset.to_duckdb(
             factory=factory,
             registry=registry,
@@ -326,25 +411,19 @@ class Pipeline:
     @staticmethod
     def build(config: dict[str, Any]) -> "Pipeline":
         """Build a Pipeline instance from a YAML definition."""
-        if "name" not in config:
-            raise MissingRequiredKeyError("name")
-        name = config["name"]
+        required_keys = ["name", "site", "asset", "path", "allow_failure", "cadence", "tasks"]
+        missing_keys = [key for key in required_keys if key not in config]
+        if missing_keys:
+            raise MissingRequiredKeyError(", ".join(missing_keys))
 
-        if "path" not in config:
-            raise MissingRequiredKeyError("path")
+        pipeline = config["name"]
+        site = config["site"]
+        asset = config["asset"]
         path = config["path"]
-
-        if "allow_failure" not in config:
-            raise MissingRequiredKeyError("allow_failure")
-        allow_failure = config["allow_failure"]
-
-        if "cadence" not in config:
-            raise MissingRequiredKeyError("cadence")
-        cadence = Cadence.build(config["cadence"])
 
         gates = []
         for gate_config in config.get("gates", []):
-            gate = Gate.build(path, gate_config)
+            gate = Gate.build(pipeline, site, asset, path, gate_config)
             lookback = None
             if "lookback" in gate_config:
                 lookback = Lookback.build(gate_config["lookback"])
@@ -354,17 +433,19 @@ class Pipeline:
             raise MissingRequiredKeyError("tasks")
         tasks = []
         for task_config in config["tasks"]:
-            task = Task.build(path, task_config)
+            task = Task.build(pipeline, site, asset, path, task_config)
             lookback = None
             if "lookback" in task_config:
                 lookback = Lookback.build(task_config["lookback"])
             tasks.append((task, lookback))
 
         return Pipeline(
-            name=name,
+            name=pipeline,
+            site=site,
+            asset=asset,
             path=path,
-            allow_failure=allow_failure,
-            cadence=cadence,
+            allow_failure=config["allow_failure"],
+            cadence=Cadence.build(config["cadence"]),
             gates=gates,
             tasks=tasks,
         )
