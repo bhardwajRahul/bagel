@@ -1,4 +1,4 @@
-"""Run a SQL query on topic messages at a given time and write the result to a file."""
+"""Run a SQL query on messages from a topic and write the result to a file."""
 
 import logging
 from enum import Enum
@@ -18,8 +18,8 @@ class OutputFormat(Enum):
     ARROW = "arrow"
 
 
-class SqlQuery(messages.TopicMessageMixin, base.Task):
-    """Run a SQL query on topic messages at a given time and write the result to a file."""
+class TopicSqlQuery(messages.TopicMessageMixin, base.Task):
+    """Run a SQL query on messages from a topic and write the result to a file."""
 
     def __init__(
         self,
@@ -78,4 +78,4 @@ class SqlQuery(messages.TopicMessageMixin, base.Task):
 
 def register() -> None:
     """Register module for dependency injection."""
-    module.global_registry[__name__] = SqlQuery
+    module.global_registry[__name__] = TopicSqlQuery
