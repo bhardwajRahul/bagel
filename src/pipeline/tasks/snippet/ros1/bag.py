@@ -15,12 +15,12 @@ class SnipRosbag(messages.TopicMessageMixin, base.Task):
 
     def __init__(
         self,
-        topics: list[str] | None,
+        topics: list[str] | None = None,
     ) -> None:
         """Initialize the task.
 
         Args:
-            topics (list[str] | None): A list of topics to filter. If None, all available
+            topics (list[str] | None, optional): A list of topics to filter. If None, all available
                 topics will be written to the new bag file.
 
         Raises:
