@@ -3,10 +3,13 @@
 import abc
 import importlib
 import logging
+import pathlib
 from collections.abc import Iterator
 from enum import Enum
 from typing import Any
 
+import boto3
+import botocore
 from pydantic import BaseModel
 
 from settings import settings
@@ -14,6 +17,7 @@ from src import artifacts
 from src.di import module
 from src.di.types.base_module import BaseModule
 from src.di.types.data_source import resolve
+from src.pipeline import progress
 
 SECOND = 1
 MINUTE = 60 * SECOND
@@ -134,6 +138,7 @@ class Operator(abc.ABC):
     _asset: str
     _path: str
     _log_id: str
+    _upload: bool
 
     @property
     def name(self) -> str:
@@ -164,6 +169,11 @@ class Operator(abc.ABC):
     def log_id(self) -> str:
         """A unique identifier for the path of an asset in a deployment site."""
         return self._log_id
+
+    @property
+    def upload(self) -> bool:
+        """Whether to upload artifacts to remote storage."""
+        return self._upload
 
     @abc.abstractmethod
     def setup(self, path: str, **kwargs) -> None:  # noqa: ANN003
@@ -202,7 +212,7 @@ class Operator(abc.ABC):
         importlib.import_module(config["module"]).register()
         cls = module.global_registry[config["module"]]
         instance: Operator = cls(**config.get("args", {}))
-        instance.setup(path=path, **config.get("setup_args", {}))
+        instance.setup(path=path, **config.get("setup", {}))
 
         name = config.get("name", artifacts.to_lower_snake_case(cls.__name__))
         if not artifacts.is_lower_snake_case(name):
@@ -213,6 +223,13 @@ class Operator(abc.ABC):
         instance._asset = asset
         instance._path = path
         instance._log_id = artifacts.generate_log_uuid(site, asset, path)
+
+        instance._upload = config.get("upload", False)
+        # TODO: support upload for gates
+        if isinstance(instance, Gate) and instance.upload:
+            logging.warning(
+                "Upload option for gates is currently not supported and will be ignored."
+            )
 
         return instance
 
@@ -248,7 +265,7 @@ class Task(Operator):
     """
 
     @abc.abstractmethod
-    def execute(self, asof_seconds: float, lookback: Lookback | None) -> None:
+    def execute(self, asof_seconds: float, lookback: Lookback | None) -> list[pathlib.Path] | None:
         """Execute the task at a specific point in time.
 
         Args:
@@ -256,6 +273,10 @@ class Task(Operator):
             lookback (Lookback | None): The lookback window defining how far back to consider data.
                 If None, all available data up to `asof_seconds` should be considered. Some tasks
                 may not support lookback and will ignore this argument.
+
+        Returns:
+            list[pathlib.Path] | None: The paths to any generated artifacts. If None, the task does
+                not produce any artifacts. An artifact could be a file or directory path.
 
         """
 
@@ -278,6 +299,7 @@ class Pipeline:
         cadence: Cadence,
         gates: list[tuple[Gate, Lookback | None]],
         tasks: list[tuple[Task, Lookback | None]],
+        report_progress: bool,
     ) -> None:
         """Initialize a Pipeline instance.
 
@@ -292,6 +314,7 @@ class Pipeline:
                 lookback windows.
             tasks (list[tuple[Task, Lookback  |  None]]): List of task operators and their
                 lookback windows.
+            report_progress (bool): Whether to report progress during artifact uploads.
 
         """
         if not artifacts.is_lower_snake_case(name):
@@ -311,6 +334,9 @@ class Pipeline:
         self._cadence = cadence
         self._gates = gates
         self._tasks = tasks
+
+        self._report_progress = report_progress
+        self._artifacts = []
 
     @property
     def name(self) -> str:
@@ -377,7 +403,9 @@ class Pipeline:
         try:
             if all(gate.evaluate(asof_seconds, lookback) for gate, lookback in self._gates):
                 for task, lookback in self._tasks:
-                    task.execute(asof_seconds, lookback)
+                    artifacts = task.execute(asof_seconds, lookback)
+                    if task.upload and artifacts and self.can_upload_artifacts():
+                        self._artifacts.extend(artifacts)
                 logging.info(
                     "Pipeline '%s' executed when topic '%s' received message at %.4f seconds",
                     self.name,
@@ -407,6 +435,10 @@ class Pipeline:
         for asof_seconds in self._asof_timestamps():
             self.run_at(asof_seconds)
         logging.info("Pipeline '%s' completed.", self.name)
+
+        if self._artifacts:
+            self.upload_artifacts()
+            logging.info("Uploaded artifacts for pipeline '%s'.", self.name)
 
     @staticmethod
     def build(config: dict[str, Any]) -> "Pipeline":
@@ -448,4 +480,75 @@ class Pipeline:
             cadence=Cadence.build(config["cadence"]),
             gates=gates,
             tasks=tasks,
+            report_progress=config.get("report_progress", False),
         )
+
+    def can_upload_artifacts(self) -> bool:
+        """Check if the pipeline is configured to upload artifacts."""
+        if not settings.EXTELLIGENCE_S3_BUCKET_NAME:
+            logging.warning(
+                "Cannot upload artifacts for pipeline '%s' because 'EXTELLIGENCE_S3_BUCKET_NAME' is not set",  # noqa: E501
+                self.name,
+            )
+            return False
+
+        return True
+
+    def upload_artifacts(self) -> None:
+        """Upload generated artifacts to remote storage."""
+        for path in self._artifacts:
+            self._upload(path)
+        self._artifacts = []
+
+    def _upload(self, path: pathlib.Path) -> None:
+        if not path.exists():
+            raise FileNotFoundError(path)
+
+        source_files = []
+
+        if path.is_file():
+            source_files.append(path)
+        elif path.is_dir():
+            source_files.extend([p for p in path.rglob("*") if p.is_file()])
+
+        s3_client = boto3.client("s3", region_name=settings.EXTELLIGENCE_S3_BUCKET_REGION)
+
+        for local_file in source_files:
+            local_sha256 = artifacts.checksum_sha256(local_file)
+            s3_key = artifacts.artifact_s3_key(local_file)
+
+            try:
+                response = s3_client.get_object_attributes(
+                    Bucket=settings.EXTELLIGENCE_S3_BUCKET_NAME,
+                    Key=s3_key,
+                    ObjectAttributes=["Checksum"],
+                )
+                checksum = response.get("Checksum", {})
+                remote_sha256 = checksum.get("ChecksumSHA256")
+                if remote_sha256 == local_sha256:
+                    logging.info(
+                        "'%s' already exists in S3 with matching SHA-256, skipping upload", s3_key
+                    )
+                    continue
+            except botocore.exceptions.ClientError as e:
+                if e.response["Error"]["Code"] == "NoSuchKey":
+                    pass  # Object does not exist, proceed to upload
+                else:
+                    raise e
+
+            bar = progress.Progress(
+                local_file,
+                s3_key,
+                local_file.stat().st_size,
+                "local file",
+                "s3 file",
+                self._report_progress,
+            )
+
+            s3_client.upload_file(
+                Filename=str(local_file),
+                Bucket=settings.EXTELLIGENCE_S3_BUCKET_NAME,
+                Key=s3_key,
+                Callback=bar,
+                ExtraArgs={"ChecksumAlgorithm": "SHA256"},
+            )

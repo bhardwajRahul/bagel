@@ -1,6 +1,7 @@
 """Write messages from specified topics to a file in various formats."""
 
 import logging
+import pathlib
 from enum import Enum
 
 from src import artifacts
@@ -43,7 +44,7 @@ class WriteTopicsToFile(messages.TopicMessageMixin, base.Task):
         self._output_format = OutputFormat(output_format)
         self._ffill = ffill
 
-    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> None:
+    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> list[pathlib.Path]:
         """Execute the task at the given time."""
         topics = self._topics or self.registry.available_topics(self.factory.build())
         relation = self.to_duckdb(
@@ -76,6 +77,8 @@ class WriteTopicsToFile(messages.TopicMessageMixin, base.Task):
                     writer.write_table(table)
 
         logging.info("Wrote %s", output_file)
+
+        return [output_file]
 
 
 def register() -> None:

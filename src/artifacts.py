@@ -1,5 +1,6 @@
 """Artifacts created by the application."""
 
+import base64
 import hashlib
 import json
 import pathlib
@@ -8,6 +9,11 @@ import uuid
 from datetime import datetime
 
 from settings import settings
+
+BYTE = 1
+KB = 1024 * BYTE
+MB = 1024 * KB
+GB = 1024 * MB
 
 
 def is_lower_snake_case(s: str) -> bool:
@@ -28,6 +34,20 @@ def short_digest(seeds: list[str]) -> str:
     if not seeds:
         raise ValueError("Seeds list must not be empty.")
     return hashlib.sha256("_".join(seeds).encode("utf8")).hexdigest()[:8]
+
+
+def checksum_sha256(file_path: str | pathlib.Path, chunk_size_bytes: int = 512 * MB) -> str:
+    """Calculate the SHA-256 checksum of a local file."""
+    file_hash = hashlib.sha256()
+
+    with open(file_path, "rb") as f:
+        while chunk := f.read(chunk_size_bytes):
+            file_hash.update(chunk)
+
+    digest = file_hash.digest()
+    checksum_b64 = base64.b64encode(digest).decode("utf-8")
+
+    return checksum_b64
 
 
 #############################
@@ -91,3 +111,10 @@ def pipeline_task_artifact_path(  # noqa: PLR0913
         return parent / f"{timestamp_seconds}.{extension.lstrip('.')}"
     else:
         return parent / f"{timestamp_seconds}"
+
+
+def artifact_s3_key(path: pathlib.Path) -> str:
+    """Return the S3 key for the given artifact path."""
+    relative_path = path.relative_to(settings.ARTIFACT_DIRECTORY)
+    s3_key = pathlib.Path(settings.ARTIFACT_DIRNAME) / relative_path
+    return s3_key.as_posix()

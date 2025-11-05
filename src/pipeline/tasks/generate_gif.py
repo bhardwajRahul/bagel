@@ -1,6 +1,7 @@
 """Generate a GIF file from images in a topic."""
 
 import logging
+import pathlib
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -27,7 +28,7 @@ class GenerateGif(images.TopicImageMixin, base.Task):
         self._font = ImageFont.load_default()
         self._fill_text = (255, 255, 255, 255)
 
-    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> None:
+    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> list[pathlib.Path]:
         """Execute the task at the given time."""
 
         def _text_size(draw, text, font) -> tuple[int, int]:  # noqa: ANN001
@@ -36,6 +37,7 @@ class GenerateGif(images.TopicImageMixin, base.Task):
 
         frames = []
         first_image = None
+        gif_files = []
 
         for _, timestamp_seconds, image in self.to_images(
             topics=[self._topic], asof_seconds=asof_seconds, lookback=lookback
@@ -88,6 +90,9 @@ class GenerateGif(images.TopicImageMixin, base.Task):
                 loop=0,
             )
             logging.info("Wrote %s", gif_file)
+            gif_files.append(gif_file)
+
+        return gif_files
 
 
 def register() -> None:

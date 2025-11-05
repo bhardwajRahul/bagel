@@ -2,6 +2,7 @@
 
 import heapq
 import logging
+import pathlib
 import shlex
 import subprocess
 
@@ -31,7 +32,7 @@ class SnipRosbag(messages.TopicMessageMixin, base.Task):
             raise ValueError("If 'topics' is specified, it must contain at least one topic name.")
         self._topics = topics
 
-    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> None:
+    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> list[pathlib.Path]:
         """Execute the task at the given time."""
         conditions = []
 
@@ -91,6 +92,8 @@ class SnipRosbag(messages.TopicMessageMixin, base.Task):
         logging.debug(shlex.join(result.args))
         logging.debug(result.stdout.strip())
         logging.info("Wrote %s", output_file)
+
+        return [output_file]
 
 
 def register() -> None:
