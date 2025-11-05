@@ -1,6 +1,7 @@
 """Run a SQL query on messages from a topic and write the result to a file."""
 
 import logging
+import pathlib
 from enum import Enum
 
 import duckdb
@@ -40,7 +41,7 @@ class TopicSqlQuery(messages.TopicMessageMixin, base.Task):
         self._statement = statement
         self._output_format = OutputFormat(output_format)
 
-    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> None:
+    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> list[pathlib.Path]:
         """Execute the task at the given time."""
         relation = self.to_duckdb(
             topics=[self._topic], asof_seconds=asof_seconds, lookback=lookback
@@ -74,6 +75,8 @@ class TopicSqlQuery(messages.TopicMessageMixin, base.Task):
                     writer.write_table(table)
 
         logging.info("Wrote %s", output_file)
+
+        return [output_file]
 
 
 def register() -> None:

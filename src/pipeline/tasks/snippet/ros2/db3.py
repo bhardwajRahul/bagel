@@ -1,6 +1,7 @@
 """Create a new ROS2 DB3 bag snippet."""
 
 import logging
+import pathlib
 from collections import deque
 
 import rosbag2_py
@@ -43,7 +44,7 @@ class SnipRosbag(messages.TopicMessageMixin, base.Task):
 
         self._output_storage_id = "sqlite3"
 
-    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> None:
+    def execute(self, asof_seconds: float, lookback: base.Lookback | None) -> list[pathlib.Path]:
         """Execute the task at the given time."""
         data_source = self.factory.build()
         topics = self._topics or self.registry.available_topics(data_source)
@@ -94,6 +95,8 @@ class SnipRosbag(messages.TopicMessageMixin, base.Task):
             writer.close()
 
         logging.info("Wrote %s", bag_directory)
+
+        return [bag_directory]
 
 
 def register() -> None:
