@@ -11,6 +11,7 @@ RUN apt-get update && \
     jq \
     libxml2-dev \
     libxslt-dev \
+    rsync \
     vim && \
     rm -rf /var/lib/apt/lists/*
 
