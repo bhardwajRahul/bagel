@@ -35,6 +35,7 @@ RUN apt-get update && \
     gnupg \
     jq \
     lsb-release \
+    rsync \
     vim \
     "ros-${ROS_DISTRO}-cv-bridge" \
     "ros-${ROS_DISTRO}-rosbridge-suite" && \

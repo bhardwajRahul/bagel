@@ -6,11 +6,12 @@ FROM ros:${ROS_DISTRO}-ros-core
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
-    jq \
-    vim \
-    curl \
-    wget \
     ca-certificates \
+    curl \
+    jq \
+    rsync \
+    vim \
+    wget \
     "ros-${ROS_DISTRO}-ros-base" \
     "ros-${ROS_DISTRO}-rosbridge-suite" \
     "ros-${ROS_DISTRO}-ros2bag" \
