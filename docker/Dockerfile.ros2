@@ -51,6 +51,7 @@ EXPOSE ${MCP_SERVER_PORT}
 
 # Copy common source code
 COPY --chown=${USERNAME}:${USERNAME} server.py ./server.py
+COPY --chown=${USERNAME}:${USERNAME} run.py ./run.py
 COPY --chown=${USERNAME}:${USERNAME} settings.py ./settings.py
 COPY --chown=${USERNAME}:${USERNAME} src/artifacts.py ./src/artifacts.py
 COPY --chown=${USERNAME}:${USERNAME} src/sink/base.py ./src/sink/base.py
