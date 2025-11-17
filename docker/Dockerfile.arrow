@@ -8,9 +8,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    git \
     jq \
-    libxml2-dev \
-    libxslt-dev \
     rsync \
     vim && \
     rm -rf /var/lib/apt/lists/*
@@ -32,9 +31,9 @@ COPY --chown=${USERNAME}:${USERNAME} pyproject.toml ./
 COPY --chown=${USERNAME}:${USERNAME} uv.lock ./
 ARG DEV_MODE
 RUN if [ "_${DEV_MODE}" = "_true" ]; then \
-    uv sync --group betaflight; \
+    uv sync; \
     else \
-    uv sync --no-dev --group betaflight; \
+    uv sync --no-dev; \
     fi
 
 # Expose MCP server port
@@ -87,18 +86,6 @@ COPY --chown=${USERNAME}:${USERNAME} .env ./.env
 
 # Copy sample data
 COPY --chown=${USERNAME}:${USERNAME} data/sample/ ./data/sample/
-
-# Copy Betaflight specific source code
-COPY --chown=${USERNAME}:${USERNAME} src/source/betaflight ./src/source/betaflight
-COPY --chown=${USERNAME}:${USERNAME} src/topic/betaflight ./src/topic/betaflight
-COPY --chown=${USERNAME}:${USERNAME} src/message/betaflight ./src/message/betaflight
-COPY --chown=${USERNAME}:${USERNAME} src/logging/betaflight ./src/logging/betaflight
-
-# Copy Betaflight specific test code
-COPY --chown=${USERNAME}:${USERNAME} test/source/betaflight ./test/source/betaflight
-COPY --chown=${USERNAME}:${USERNAME} test/topic/betaflight ./test/topic/betaflight
-COPY --chown=${USERNAME}:${USERNAME} test/message/betaflight ./test/message/betaflight
-COPY --chown=${USERNAME}:${USERNAME} test/logging/betaflight ./test/logging/betaflight
 
 RUN if [ "_$DEV_MODE" = "_false" ]; then rm -rf ./test ./data; fi
 
