@@ -14,7 +14,6 @@ class OutputFormat(Enum):
 
     CSV = "csv"
     PARQUET = "parquet"
-    ARROW = "arrow"
 
 
 class WriteTopicsToFile(messages.TopicMessageMixin, base.Task):
@@ -31,7 +30,7 @@ class WriteTopicsToFile(messages.TopicMessageMixin, base.Task):
         Args:
             topics (list[str] | None): A list of topics to write to a file. If None, all available
                 topics will be written.
-            output_format (str): The format of the output files (e.g., "csv", "parquet", "arrow").
+            output_format (str): The format of the output files (e.g., "csv", "parquet").
             ffill (bool): Whether to apply forward-fill to the topic messages.
 
         Raises:
@@ -68,13 +67,6 @@ class WriteTopicsToFile(messages.TopicMessageMixin, base.Task):
 
             case OutputFormat.PARQUET:
                 relation.to_parquet(file_name=str(output_file))
-
-            case OutputFormat.ARROW:
-                from pyarrow import ipc
-
-                table = relation.to_arrow()
-                with ipc.new_file(output_file, table.schema) as writer:
-                    writer.write_table(table)
 
         logging.info("Wrote %s", output_file)
 
