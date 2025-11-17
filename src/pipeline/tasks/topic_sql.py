@@ -16,7 +16,6 @@ class OutputFormat(Enum):
 
     CSV = "csv"
     PARQUET = "parquet"
-    ARROW = "arrow"
 
 
 class TopicSqlQuery(messages.TopicMessageMixin, base.Task):
@@ -34,7 +33,7 @@ class TopicSqlQuery(messages.TopicMessageMixin, base.Task):
             topic (str): The topic to run the SQL query on.
             statement (str): The SQL query to execute. The `FROM` clause must refer to
                 the topic name as a table.
-            output_format (str): The format of the output files (e.g., "csv", "parquet", "arrow").
+            output_format (str): The format of the output files (e.g., "csv", "parquet").
 
         """
         self._topic = topic
@@ -66,13 +65,6 @@ class TopicSqlQuery(messages.TopicMessageMixin, base.Task):
 
             case OutputFormat.PARQUET:
                 result.to_parquet(file_name=str(output_file))
-
-            case OutputFormat.ARROW:
-                from pyarrow import ipc
-
-                table = result.to_arrow()
-                with ipc.new_file(output_file, table.schema) as writer:
-                    writer.write_table(table)
 
         logging.info("Wrote %s", output_file)
 
