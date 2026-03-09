@@ -20,6 +20,12 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Directory name for Bagel artifacts
+    ARTIFACT_DIRNAME: str = "artifacts"
+
+    # Directory for Bagel artifacts
+    ARTIFACT_DIRECTORY: str = str(pathlib.Path.home() / ".bagel" / ARTIFACT_DIRNAME)
+
     # Directory for caching intermediate artifacts
     CACHE_DIRECTORY: str = str(pathlib.Path.home() / ".cache" / "bagel")
 
@@ -43,6 +49,14 @@ class Settings(BaseSettings):
 
     # Default quantization resolution in meters for cloudini lossy compression
     CLOUDINI_DEFAULT_RESOLUTION: float = 0.001
+    ###############################################
+    # S3 configuration for uploading artifacts to #
+    # the Extelligence platform.                  #
+    ###############################################
+
+    EXTELLIGENCE_S3_BUCKET_NAME: str | None = None  # If not set, artifact upload is disabled
+
+    EXTELLIGENCE_S3_BUCKET_REGION: str | None = None  # If not set, will use default region
 
     ################################################
     # The default values of the following settings #

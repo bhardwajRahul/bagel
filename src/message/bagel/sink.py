@@ -8,6 +8,7 @@ import pyarrow as pa
 
 from src.di import module
 from src.message import base
+from src.message.bagel import convert
 from src.sink import reader
 
 
@@ -53,7 +54,7 @@ class MessageDataset(base.MessageDataset):
                 heapq.heappush(heap, (timestamp_seconds, topic, msg))
 
     def _to_json(self, message: dict[str, Any], struct: pa.StructType) -> dict[str, Any]:
-        return message  # no-op, already JSON-serializable
+        return convert.to_json(message, struct)
 
 
 def register() -> None:

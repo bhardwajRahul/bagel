@@ -6,11 +6,12 @@ FROM ros:${ROS_DISTRO}-ros-core
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
-    jq \
-    vim \
-    curl \
-    wget \
     ca-certificates \
+    curl \
+    jq \
+    rsync \
+    vim \
+    wget \
     "ros-${ROS_DISTRO}-ros-base" \
     "ros-${ROS_DISTRO}-rosbridge-suite" \
     "ros-${ROS_DISTRO}-ros2bag" \
@@ -48,8 +49,22 @@ RUN if [ "_${DEV_MODE}" = "_true" ]; then \
 ARG MCP_SERVER_PORT
 EXPOSE ${MCP_SERVER_PORT}
 
+# Configure Jupyter Lab host and port
+ARG JUPYTER_HOST
+ARG JUPYTER_PORT
+RUN if [ "_${DEV_MODE}" = "_true" ]; then \
+    uv run jupyter lab --generate-config && \
+    CONFIG_FILE="/home/${USERNAME}/.jupyter/jupyter_lab_config.py" && \
+    echo "c.ServerApp.ip = '${JUPYTER_HOST}'" >> "${CONFIG_FILE}" && \
+    echo "c.ServerApp.port = ${JUPYTER_PORT}" >> "${CONFIG_FILE}"; \
+    fi
+
+# Expose Jupyter Lab port
+EXPOSE ${JUPYTER_PORT}
+
 # Copy common source code
 COPY --chown=${USERNAME}:${USERNAME} server.py ./server.py
+COPY --chown=${USERNAME}:${USERNAME} run.py ./run.py
 COPY --chown=${USERNAME}:${USERNAME} settings.py ./settings.py
 COPY --chown=${USERNAME}:${USERNAME} src/artifacts.py ./src/artifacts.py
 COPY --chown=${USERNAME}:${USERNAME} src/sink/base.py ./src/sink/base.py
@@ -58,11 +73,15 @@ COPY --chown=${USERNAME}:${USERNAME} src/sink/reader.py ./src/sink/reader.py
 COPY --chown=${USERNAME}:${USERNAME} src/source/base.py ./src/source/base.py
 COPY --chown=${USERNAME}:${USERNAME} src/source/errors.py ./src/source/errors.py
 COPY --chown=${USERNAME}:${USERNAME} src/source/bagel ./src/source/bagel
+COPY --chown=${USERNAME}:${USERNAME} src/source/pyarrow ./src/source/pyarrow
 COPY --chown=${USERNAME}:${USERNAME} src/topic/base.py ./src/topic/base.py
 COPY --chown=${USERNAME}:${USERNAME} src/topic/bagel ./src/topic/bagel
+COPY --chown=${USERNAME}:${USERNAME} src/topic/pyarrow ./src/topic/pyarrow
 COPY --chown=${USERNAME}:${USERNAME} src/message/base.py ./src/message/base.py
 COPY --chown=${USERNAME}:${USERNAME} src/message/bagel ./src/message/bagel
+COPY --chown=${USERNAME}:${USERNAME} src/message/pyarrow ./src/message/pyarrow
 COPY --chown=${USERNAME}:${USERNAME} src/logging/base.py ./src/logging/base.py
+COPY --chown=${USERNAME}:${USERNAME} src/pipeline ./src/pipeline
 COPY --chown=${USERNAME}:${USERNAME} src/di ./src/di
 COPY --chown=${USERNAME}:${USERNAME} src/agent ./src/agent
 

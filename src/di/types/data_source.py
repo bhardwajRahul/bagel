@@ -1,5 +1,7 @@
 """A list of supported data source types and utilities to identify them."""
 
+import csv
+import json
 import pathlib
 from enum import Enum
 from urllib.parse import urlparse
@@ -18,6 +20,8 @@ class DataSource(Enum):
     BETAFLIGHT_BBL = "betaflight.bbl"
     BETAFLIGHT_BFL = "betaflight.bfl"
     BAGEL_SINK = "bagel.sink"
+    PYARROW_JSON = "pyarrow.json"
+    PYARROW_CSV = "pyarrow.csv"
 
 
 def resolve(path: str) -> DataSource:
@@ -31,7 +35,7 @@ def resolve(path: str) -> DataSource:
         return resolve_file_based_data_source(path)
 
 
-def resolve_file_based_data_source(path: str | pathlib.Path) -> DataSource:  # noqa: PLR0911
+def resolve_file_based_data_source(path: str | pathlib.Path) -> DataSource:  # noqa: C901, PLR0911
     """Resolve the data source type from the given file or directory path."""
     path = pathlib.Path(path)
     if is_bagel_sink_directory(path):
@@ -50,6 +54,10 @@ def resolve_file_based_data_source(path: str | pathlib.Path) -> DataSource:  # n
         return DataSource.BETAFLIGHT_BBL
     elif is_betaflight_bfl_file(path):
         return DataSource.BETAFLIGHT_BFL
+    elif is_json_file(path) or is_json_directory(path):
+        return DataSource.PYARROW_JSON
+    elif is_csv_file(path) or is_csv_directory(path):
+        return DataSource.PYARROW_CSV
     else:
         raise ValueError(f"Cannot resolve data source type from path: {path}")
 
@@ -172,5 +180,76 @@ def is_bagel_sink_directory(path: pathlib.Path) -> bool:
     magic = metadata.get("magic")
     if magic != "BAGEL_SINK":
         return False
+
+    return True
+
+
+def is_standard_json_file(path: pathlib.Path) -> bool:
+    """Check if the given path is a standard JSON file."""
+    if not path.is_file():
+        return False
+
+    try:
+        json.loads(path.read_text())
+        return True
+    except json.JSONDecodeError:
+        return False
+
+
+def is_json_lines_file(path: pathlib.Path) -> bool:
+    """Check if the given path is a JSON Lines (JSONL) file."""
+    if not path.is_file():
+        return False
+
+    with open(path, encoding="utf-8") as f:
+        try:
+            json.loads(f.readline().strip())  # only check the first line
+            return True
+        except json.JSONDecodeError:
+            return False
+
+
+def is_json_file(path: pathlib.Path) -> bool:
+    """Check if the given path is a JSON or JSONL file."""
+    return is_json_lines_file(path) or is_standard_json_file(path)
+
+
+def is_json_directory(path: pathlib.Path) -> bool:
+    """Check if the given path is a directory containing **only** JSON or JSONL files."""
+    if not path.is_dir():
+        return False
+
+    for item in path.iterdir():
+        if item.is_file() and not is_json_file(item):
+            return False
+
+    return True
+
+
+def is_csv_file(path: pathlib.Path) -> bool:
+    """Check if the given path is a CSV file."""
+    if not path.is_file():
+        return False
+
+    try:
+        with open(path, encoding="utf-8") as f:
+            sample = f.read(4096)
+            if not sample.strip():
+                return False
+            csv.Sniffer().sniff(sample)
+            return True
+
+    except (csv.Error, UnicodeDecodeError):
+        return False
+
+
+def is_csv_directory(path: pathlib.Path) -> bool:
+    """Check if the given path is a directory containing **only** CSV files."""
+    if not path.is_dir():
+        return False
+
+    for item in path.iterdir():
+        if item.is_file() and not is_csv_file(item):
+            return False
 
     return True
