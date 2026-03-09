@@ -191,6 +191,10 @@ Result:
 meow 🐱 4 topics 🐱💤🎯
 ```
 
+## 📦 Integrations
+
+- [Cloudini](./doc/runbooks/cloudini.md) — Decode cloudini-compressed pointcloud data in pipelines
+
 ## 🫶 Contributing
 
 We’d love your help! The easiest way to support the project is by giving it a ⭐ on GitHub.
